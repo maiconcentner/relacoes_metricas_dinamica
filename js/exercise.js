@@ -46,7 +46,8 @@
   const COLNAME = { hip: 'hipotenusa', ob: 'lado oposto a β', og: 'lado oposto a γ' };
 
   /* ---------- Estado ---------- */
-  const cfg = { focus: new Set(), steps: 1, nums: 'int', randPos: false, method: 'both' };
+  const cfg = { focus: new Set(), steps: 1, nums: 'int', randPos: false, method: 'both', scene: 'none' };
+  const sceneOf = (e) => (e && e.scene && e.scene !== 'none' ? RM.scenes.SCENES[e.scene] : null);
   let mini = null;
   let ex = null;             // { t, givens, target, path, sol: [...], cur }
   const layers = { names: false, angles: false, fill: false };
@@ -110,15 +111,18 @@
     return out;
   }
 
-  function generate() {
+  function generate(numsOverride) {
+    const nums = numsOverride || cfg.nums;
+    const sc = cfg.scene !== 'none' ? RM.scenes.SCENES[cfg.scene] : null;
+    const maxA = sc && sc.maxA ? sc.maxA : 110;
     const fr = focusRels();
     for (let tries = 0; tries < 8000; tries++) {
       const strict = tries < 5000;
       let [p, q] = pick(PQ);
       if (Math.random() < 0.5) [p, q] = [q, p];
-      const d = pick(cfg.nums === 'int' ? D_INT : D_DEC);
+      const d = pick(nums === 'int' ? D_INT : D_DEC);
       const t = triFrom(d * (p * p + q * q), d * p * p);
-      if (t.a > 110) continue;
+      if (t.a > maxA) continue;
       const g = (cfg.steps === 1 && fr.includes('ah') && Math.random() < 0.5) || Math.random() < 0.12 ? 3 : 2;
       const sh = shuffle(VARS);
       const givens = sh.slice(0, g);
@@ -131,7 +135,7 @@
       const used = new Set();
       path.forEach((s) => RELS[s.rel].vars.forEach((v) => used.add(v)));
       if (!givens.every((v) => used.has(v))) continue;
-      if (!givens.concat(path.map((s) => s.x)).every((v) => nice(t[v], cfg.nums))) continue;
+      if (!givens.concat(path.map((s) => s.x)).every((v) => nice(t[v], nums))) continue;
       return { t, givens, target, path };
     }
     return null;
@@ -142,13 +146,22 @@
   const i = (v) => '<i>' + v + '</i>';
   const fr = (a, b) => '<span class="frac"><span>' + a + '</span><span>' + b + '</span></span>';
   const ml = (html) => '<div class="mathline">' + html + '</div>';
-  const unit = (txt) => RM.withUnit(txt);
+  const unit = (txt) => {
+    const sc = sceneOf(ex);
+    return sc && !RM.state.unit ? txt + '\u00a0' + sc.unit : RM.withUnit(txt);
+  };
 
   function listAnd(items) {
     return items.length <= 1 ? items.join('') : items.slice(0, -1).join(', ') + ' e ' + items[items.length - 1];
   }
 
   function statement(e) {
+    const sc = sceneOf(e);
+    if (sc) {
+      const u = (v) => F(e.t[v]) + '\u00a0' + (RM.state.unit || sc.unit);
+      const giv = e.givens.map((v) => sc.nouns[v][0] + ' mede ' + u(v));
+      return sc.intro + ' Sabendo que ' + listAnd(giv) + ', determine a medida <b>x</b> ' + sc.nouns[e.target][1] + '.';
+    }
     const giv = e.givens.map((v) => SEG[v] + ' = ' + unit(F(e.t[v])));
     return 'No triângulo ABC, retângulo em A, AH é a altura relativa à hipotenusa BC. Sabendo que ' +
       listAnd(giv) + ', determine a medida <b>x</b> ' + DESC[e.target] + '.';
@@ -165,9 +178,12 @@
 
     const giv = e.givens.map((v) => i(v) + ' = ' + SEG[v] + ' = ' + F(t[v]));
     steps.push({
-      title: 'Organizando os dados',
-      html: '<p>Nomeamos os elementos: hipotenusa ' + i('a') + ', catetos ' + i('b') + ' e ' + i('c') +
-        ', altura ' + i('h') + ' e projeções ' + i('m') + ' e ' + i('n') + '.</p>' +
+      title: sceneOf(e) ? 'Encontrando o triângulo' : 'Organizando os dados',
+      html: (sceneOf(e)
+        ? '<p>Primeiro, encontramos o <b>triângulo retângulo escondido na cena</b>: ABC, com ângulo reto em A e a altura AH.</p>' +
+          '<p>' + ['a', 'b', 'c', 'h', 'm', 'n'].map((v) => i(v) + ' = ' + sceneOf(e).nouns[v][0]).join('; ') + '.</p>'
+        : '<p>Nomeamos os elementos: hipotenusa ' + i('a') + ', catetos ' + i('b') + ' e ' + i('c') +
+        ', altura ' + i('h') + ' e projeções ' + i('m') + ' e ' + i('n') + '.</p>') +
         ml('Dados: ' + listAnd(giv)) + ml('Queremos: <b>x</b> = ' + i(e.target) + ' = ' + SEG[e.target]) +
         (e.path.length > 1 ? '<p>Vamos precisar de ' + e.path.length + ' relações, uma de cada vez.</p>' : ''),
       fig: { names: true, hl: e.givens.map((v) => [v, 'hl2']).concat([[e.target, 'hl1']]) },
@@ -332,19 +348,24 @@
       return [x * Math.cos(th) - y * Math.sin(th), x * Math.sin(th) + y * Math.cos(th)];
     };
     const raw = { B: turn([0, 0]), C: turn([t.a, 0]), A: turn([t.m, t.h]), H: turn([t.m, 0]) };
-    const xs = [raw.A[0], raw.B[0], raw.C[0]], ys = [raw.A[1], raw.B[1], raw.C[1]];
+    const sc = sceneOf(ex);
+    const extra = sc ? sc.extent(RM.scenes.geo(t)).map(turn) : [];
+    const all = [raw.A, raw.B, raw.C].concat(extra);
+    const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const k = Math.min(740 / Math.max(x1 - x0, 1e-9), 400 / Math.max(y1 - y0, 1e-9));
+    const k = Math.min((sc ? 820 : 740) / Math.max(x1 - x0, 1e-9), (sc ? 480 : 400) / Math.max(y1 - y0, 1e-9));
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const S = (p) => { const r = turn(p); return [W / 2 + k * (r[0] - cx), 300 - k * (r[1] - cy)]; };
     const P = {};
     Object.keys(raw).forEach((n) => { P[n] = [W / 2 + k * (raw[n][0] - cx), 300 - k * (raw[n][1] - cy)]; });
+    P.S = S;
     return P;
   }
 
   /* Passos de semelhança usam a mini-animação; os outros, a figura do exercício. */
   function render() { showStep(0); }
   function showStep(dir) {
-    if (!ex) { if (mini) mini.stop(); els.svg.innerHTML = ''; return; }
+    if (!ex || !ex.sol) { if (mini) mini.stop(); els.svg.innerHTML = ''; return; }
     const st = ex.sol[ex.cur];
     if (!st || !st.mini) { if (mini) mini.stop(); renderFig(); return; }
     const o = { t: ex.t, hl: st.mini.hl, label: st.mini.label };
@@ -359,7 +380,7 @@
   }
 
   function renderFig() {
-    if (!ex) { els.svg.innerHTML = ''; return; }
+    if (!ex || !ex.sol) { els.svg.innerHTML = ''; return; }
     const t = ex.t;
     const P = figTransform(t);
     const step = ex.sol[ex.cur] || { fig: {}, found: [] };
@@ -373,6 +394,10 @@
     const showNames = layers.names || fig.names || ex.cur > 0;
     const fs = D.fs(28);
     let out = '';
+    const sc = sceneOf(ex);
+    if (sc) out += '<g class="scene">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
+    // Na cena, o triângulo aparece discreto até ser "encontrado" (passo 1)
+    const hidden = sc && ex.cur === 0;
 
     // Preenchimentos
     out += D.poly([P.B, P.C, P.A], 'style="fill:' + (fill.has('big') ? 'var(--big-fill)' : 'transparent') + ';stroke:none"');
@@ -394,8 +419,10 @@
 
     // Contornos
     const bigStroke = fill.has('big') ? 4.5 : 3;
-    out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:' + bigStroke + ';stroke-linejoin:round"');
-    if (showAlt) out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+    if (!hidden) {
+      out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:' + bigStroke + ';stroke-linejoin:round"');
+      if (showAlt) out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+    }
 
     // Destaques
     (fig.hl || []).forEach(([v, color]) => {
@@ -460,13 +487,14 @@
     els.nums.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', cfg.nums === b.dataset.v));
     els.randPos.checked = cfg.randPos;
     document.querySelectorAll('#ex-method button').forEach((b) => b.setAttribute('aria-pressed', cfg.method === b.dataset.v));
+    document.querySelectorAll('#ex-scene [data-scene]').forEach((b) => b.setAttribute('aria-pressed', cfg.scene === b.dataset.scene));
     document.querySelectorAll('[data-exlayer]').forEach((b) => b.setAttribute('aria-pressed', layers[b.dataset.exlayer]));
     els.custom.querySelectorAll('[data-cv]').forEach((b) => {
       const v = b.dataset.cv, role = b.dataset.role;
       b.setAttribute('aria-pressed', (custom[v] || 'none') === role);
     });
 
-    if (!ex) {
+    if (!ex || !ex.sol) {
       els.statement.innerHTML = '<p class="note">Escolha o foco e toque em <b>Gerar exercício</b>.</p>';
       els.stepBody.innerHTML = '';
       els.stepTitle.textContent = '';
@@ -489,6 +517,13 @@
   }
 
   function load(e) {
+    if (e.scene === undefined) e.scene = cfg.scene;
+    ex = Object.assign({}, ex || {}, { scene: e.scene });
+    const sc = sceneOf(e);
+    if (sc) {
+      const o = sc.orient(e.t);
+      if (Math.abs(RM.normDeg(o.rot - RM.state.rot)) > 0.5 || RM.state.mirror !== o.mirror) RM.set({ rot: o.rot, mirror: o.mirror });
+    }
     const sol = buildSolution(e);
     // Passo 0 = só o enunciado; os passos da resolução vêm depois
     sol.unshift({ title: 'Enunciado', fig: {}, found: [] });
@@ -498,13 +533,18 @@
   }
 
   function onGenerate() {
-    const e = generate();
+    let e = generate();
+    let note = '';
+    if (!e && cfg.nums === 'int' && cfg.scene !== 'none') {
+      e = generate('dec');
+      if (e) note = 'Usei números decimais para as medidas ficarem realistas nesta situação.';
+    }
     if (!e) {
       els.msg.textContent = 'Não encontrei um exercício com essas escolhas. Tente outro número de passos ou mais relações no foco.';
       return;
     }
-    els.msg.textContent = '';
-    if (cfg.randPos) {
+    els.msg.textContent = note;
+    if (cfg.randPos && cfg.scene === 'none') {
       let r;
       do { r = Math.round(Math.random() * 360) - 180; } while (Math.abs(r) < 25);
       RM.set({ rot: r, mirror: Math.random() < 0.5 });
@@ -530,7 +570,7 @@
       return;
     }
     els.cmsg.textContent = '';
-    load({ t, givens, target, path });
+    load({ t, givens, target, path, scene: cfg.scene });
   }
 
   function go(delta) {
@@ -565,7 +605,16 @@
         const b = e.target.closest('[data-v]');
         if (!b) return;
         cfg.method = b.dataset.v;
-        if (ex) load({ t: ex.t, givens: ex.givens, target: ex.target, path: ex.path });
+        if (ex) load({ t: ex.t, givens: ex.givens, target: ex.target, path: ex.path, scene: ex.scene });
+        else renderSide();
+      });
+      document.getElementById('ex-scene').innerHTML = [['none', 'Sem contexto']].concat(Object.keys(RM.scenes.SCENES).map((k) => [k, RM.scenes.SCENES[k].name]))
+        .map(([k, n]) => '<button class="chip" data-scene="' + k + '">' + n + '</button>').join('');
+      document.getElementById('ex-scene').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-scene]');
+        if (!b) return;
+        cfg.scene = b.dataset.scene;
+        if (ex) load({ t: ex.t, givens: ex.givens, target: ex.target, path: ex.path, scene: cfg.scene });
         else renderSide();
       });
       els.focus.innerHTML = FOCUS.map((f) => '<button class="chip chip-math" data-focus="' + f.id + '">' + f.html + '</button>').join('');

@@ -30,7 +30,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - **Pitágoras com áreas** (demonstração de Euclides): começa só com o triângulo; cada quadrado **cresce** a partir do seu lado, um de cada vez; a altura desce e corta o quadrado maior em a·m e a·n; então cada quadrado de cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um desses retângulos. A área aparece junto da figura e não muda durante os movimentos.
 - Botão **▶** para reproduzir a dedução inteira sozinha.
 
-### Exercícios (primeira parte da Fase 3)
+### Exercícios e aplicações (Fase 3)
+- **Contexto**: sem contexto, **Telhado** (caibros, viga e pontalete), **Torre com cabos**, **Praça** (caminho mais curto até a avenida) ou **Escada com escora**. A cena aparece desenhada, o enunciado usa as palavras da situação e o primeiro passo é encontrar o triângulo retângulo escondido nela. As medidas ficam realistas para cada situação.
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
 - **Montar o meu**: marque quais medidas são dados e qual é pedida; o solucionador diz se dá para resolver.
 - **Resolver por**: Semelhança, Fórmula ou As duas (padrão: primeiro a semelhança, depois a conferência pela fórmula).
@@ -94,6 +95,7 @@ js/lab.js           módulo Laboratório
 js/similarity.js    módulo Semelhança passo a passo (e mini-animações)
 js/deductions.js    módulo Deduções (cartões e Pitágoras com áreas)
 js/exercise.js      módulo Exercícios (gerador e solucionador)
+js/scenes.js        cenas das aplicações (telhado, torre, praça, escada)
 js/app.js           painel do professor, atalhos, inicialização
 ```
 
@@ -101,5 +103,4 @@ Não há dependências nem etapa de build: HTML, CSS e JavaScript puros.
 
 ## Próximas fases
 
-- **Fase 3**: aplicações contextualizadas (rampa, escada, sombra). O gerador de exercícios já está pronto.
 - **Fase 4**: caneta e laser para anotar na tela, cenários salvos e QR code.

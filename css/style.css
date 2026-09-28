@@ -26,6 +26,18 @@
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --font-math: "STIX Two Text", "Cambria Math", "Times New Roman", serif;
 
+  --scene-wood: #a8743f;
+  --scene-line: #5b4632;
+  --scene-wall: #efe6d6;
+  --scene-roof: rgba(196, 92, 52, 0.22);
+  --scene-sky: #cfe6f2;
+  --scene-ground: #a9cf86;
+  --scene-road: #6f7a84;
+  --scene-path: #d9b98a;
+  --scene-tree: #4f9a57;
+  --scene-steel: #7b8794;
+  --scene-brick: #c9795a;
+  --scene-mortar: #efe0d2;
   --fs: 1;
   --radius: 10px;
   color-scheme: light;
@@ -53,6 +65,18 @@
     --hl1: #e27ae0;
     --hl2: #4fd2e6;
     --ok: #52c985;
+    --scene-wood: #b98552;
+    --scene-line: #d8c6b0;
+    --scene-wall: #3a342c;
+    --scene-roof: rgba(214, 110, 70, 0.25);
+    --scene-sky: #2a4656;
+    --scene-ground: #3f6b36;
+    --scene-road: #4c5660;
+    --scene-path: #8a6d45;
+    --scene-tree: #5fae68;
+    --scene-steel: #9aa6b2;
+    --scene-brick: #8d4c36;
+    --scene-mortar: #5b3a2e;
     color-scheme: dark;
   }
 }
@@ -77,6 +101,18 @@
   --hl1: #e27ae0;
   --hl2: #4fd2e6;
   --ok: #52c985;
+  --scene-wood: #b98552;
+  --scene-line: #d8c6b0;
+  --scene-wall: #3a342c;
+  --scene-roof: rgba(214, 110, 70, 0.25);
+  --scene-sky: #2a4656;
+  --scene-ground: #3f6b36;
+  --scene-road: #4c5660;
+  --scene-path: #8a6d45;
+  --scene-tree: #5fae68;
+  --scene-steel: #9aa6b2;
+  --scene-brick: #8d4c36;
+  --scene-mortar: #5b3a2e;
   color-scheme: dark;
 }
 
