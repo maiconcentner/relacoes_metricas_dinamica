@@ -63,6 +63,7 @@
       },
       {
         title: 'Colocando na mesma posição',
+        replay: true,
         html: () => {
           const moves = mini.moves(RM.tri(), keys);
           const items = moves.map((mv, idx) => {
@@ -252,6 +253,8 @@
     return AREA_STEPS.map((st, idx) => ({
       title: st.title,
       html: st.html,
+      // passos em que um quadrado desliza ou gira
+      replay: idx >= 2 && idx <= 7 ? () => { Object.assign(area, AREA_STEPS[idx - 1].st); } : null,
       enter: (dir) => {
         const jump = Math.abs(dir) !== 1;
         areaGo(st.st, jump ? 0 : 1100 / (RM.state.speed || 1));
@@ -293,6 +296,7 @@
     els.count.textContent = 'Passo ' + (step + 1) + ' de ' + steps.length;
     els.title.textContent = st.title;
     els.body.innerHTML = st.html();
+    document.getElementById('ded-replay').hidden = !st.replay;
     els.prev.disabled = step === 0;
     els.next.disabled = step === steps.length - 1;
     els.dots.innerHTML = steps.map((s, idx) =>
@@ -340,6 +344,11 @@
       mini = RM.sim.createMini(els.svg);
       els.list.addEventListener('click', (e) => { const b = e.target.closest('[data-card]'); if (b) select(b.dataset.card); });
       els.prev.addEventListener('click', () => goTo(step - 1));
+      document.getElementById('ded-replay').addEventListener('click', () => {
+        const st = steps[step];
+        if (typeof st.replay === 'function') st.replay();
+        st.enter(1);
+      });
       els.next.addEventListener('click', () => goTo(step + 1));
       els.dots.addEventListener('click', (e) => { const d = e.target.closest('[data-dstep]'); if (d) goTo(Number(d.dataset.dstep)); });
       RM.on((changed) => {

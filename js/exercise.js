@@ -480,6 +480,7 @@
     els.stepBody.innerHTML = ex.cur === 0
       ? '<p>' + statement(ex) + '</p><p class="note">Toque em <b>Próximo passo</b> para resolver com a turma.</p>'
       : st.html;
+    document.getElementById('ex-replay').hidden = !(st && st.mini && st.mini.mode === 'align');
     els.prev.disabled = ex.cur === 0;
     els.next.disabled = ex.cur >= ex.sol.length - 1;
     els.dots.innerHTML = ex.sol.map((s, idx) =>
@@ -603,6 +604,7 @@
         render(); renderSide();
       }));
       els.prev.addEventListener('click', () => go(-1));
+      document.getElementById('ex-replay').addEventListener('click', () => showStep(1));
       els.next.addEventListener('click', () => go(1));
       document.getElementById('ex-all').addEventListener('click', () => { if (ex) go(ex.sol.length); });
       document.getElementById('ex-restart').addEventListener('click', () => { if (ex) go(-ex.sol.length); });

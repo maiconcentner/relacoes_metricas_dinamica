@@ -507,6 +507,9 @@ details.card summary { cursor: pointer; }
 .moves li { color: var(--muted); }
 .moves li.live { color: var(--ink); font-weight: 700; }
 
+.replay { display: inline-flex; align-items: center; gap: 6px; }
+.replay svg { width: 16px; height: 16px; }
+
 /* ===== Responsivo ===== */
 @media (max-width: 900px) {
   .view { grid-template-columns: minmax(0, 1fr); }

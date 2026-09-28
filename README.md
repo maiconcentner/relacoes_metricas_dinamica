@@ -26,6 +26,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 ### Deduções (Fase 2)
 - Um cartão por relação: c² = a·m, b² = a·n, h² = m·n, a·h = b·c (e 1/h² = 1/b² + 1/c² no nível EM).
 - Cada cartão mostra onde estão os dois triângulos, alinha os dois **um movimento de cada vez**, destaca os lados correspondentes e chega à relação, conferida com os números do triângulo atual.
+- O botão **Rever movimento** repete a animação do passo atual (nas Deduções e nos Exercícios).
 - **Pitágoras com áreas** (demonstração de Euclides): o quadrado de cada cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um dos retângulos a·m e a·n dentro do quadrado da hipotenusa; a área nunca muda.
 
 ### Exercícios (primeira parte da Fase 3)
