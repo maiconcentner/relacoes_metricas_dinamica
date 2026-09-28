@@ -25,8 +25,10 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Barra acima de cada figura para **girar** (15° por clique), **espelhar**, deixar **em pé**, **sortear uma posição** qualquer ou voltar ao **padrão**.
 - No Laboratório, arrastar em qualquer ponto fora dos vértices gira a figura livremente. As medidas e as relações continuam valendo em qualquer posição.
 - Na Semelhança, a figura original aparece na posição escolhida, e o botão **Comparar** define como os triângulos são alinhados:
-  - **Em pé**: ângulo reto embaixo, catetos na vertical e na horizontal, hipotenusa na diagonal (padrão).
+  - **Amarelo fixo** (padrão): o amarelo fica parado e serve de referência; o grande só é espelhado e o verde só é girado.
+  - **Em pé**: ângulo reto embaixo, catetos na vertical e na horizontal, hipotenusa na diagonal.
   - **Hipotenusa na base**: hipotenusa horizontal, ângulo reto em cima.
+- Em qualquer opção, cada triângulo faz **no máximo um movimento**: uma reflexão (numa reta escolhida para já cair na posição final) ou uma rotação. Os textos dos passos dizem quem espelha, quem gira e quem fica parado.
 
 ### Painel do professor (botão **Professor** ou tecla `P`)
 - Hipotenusa e projeção por controle deslizante ou digitadas; ou definir pelos catetos `b` e `c`.

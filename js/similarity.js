@@ -37,12 +37,16 @@
   /* Estado: {x, y (tela), s (px/unidade), rot (rad, anti-horário), flip (1..-1), op} */
   function screenVerts(pc, st) {
     const out = {};
-    const cs = Math.cos(st.rot), sn = Math.sin(st.rot);
+    // Espelho ao longo de um eixo inclinado (ax), depois rotação: R(rot + ax) · diag(1, flip) · R(-ax)
+    const ax = st.ax || 0;
+    const c1 = Math.cos(ax), s1 = Math.sin(ax);
+    const c2 = Math.cos(st.rot + ax), s2 = Math.sin(st.rot + ax);
     pc.names.forEach((n) => {
-      const vx = pc.local[n][0];
-      const vy = pc.local[n][1] * st.flip;
-      const rx = vx * cs - vy * sn;
-      const ry = vx * sn + vy * cs;
+      const lx = pc.local[n][0], ly = pc.local[n][1];
+      const ux = lx * c1 + ly * s1;
+      const uy = (-lx * s1 + ly * c1) * st.flip;
+      const rx = ux * c2 - uy * s2;
+      const ry = ux * s2 + uy * c2;
       out[n] = [st.x + st.s * rx, st.y - st.s * ry];
     });
     return out;
@@ -53,19 +57,32 @@
     return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
   }
 
-  /* Rotação/reflexão que leva a peça à posição de comparação.
-     'base': hipotenusa horizontal, β à esquerda, ângulo reto em cima.
-     'pe'  : ângulo reto embaixo à esquerda, vértice de γ acima dele, β à direita. */
-  function orientation(pc, pose) {
+  /* Rotação/reflexão (R(rot)·diag(1,flip)) que leva a peça à posição de comparação.
+     'fixo': a mesma posição do triângulo amarelo, que não se move.
+     'pe'  : ângulo reto embaixo à esquerda, vértice de γ acima dele, β à direita.
+     'base': hipotenusa horizontal, β à esquerda, ângulo reto em cima. */
+  function legs(pc) {
+    const L = pc.local, r = pc.roles;
+    const g = [L[r.gamma][0] - L[r.right][0], L[r.gamma][1] - L[r.right][1]];
+    const b = [L[r.beta][0] - L[r.right][0], L[r.beta][1] - L[r.right][1]];
+    return { g, cross: g[0] * b[1] - g[1] * b[0] };
+  }
+  /* Posição em que a direção (reto → γ) tem o ângulo refDir e a "mão" (sinal) é refSign. */
+  function orientByRef(pc, refDir, refSign) {
+    const { g, cross } = legs(pc);
+    const flip = Math.sign(cross) === refSign ? 1 : -1;
+    return { rot: refDir - Math.atan2(g[1] * flip, g[0]), flip };
+  }
+  function orientation(pc, pose, P, fc) {
+    if (pose === 'fixo') {
+      const y = legs(P.p1);
+      return orientByRef(pc, fc.rot + Math.atan2(y.g[1] * fc.flip, y.g[0]), Math.sign(y.cross * fc.flip));
+    }
+    if (pose === 'pe') return orientByRef(pc, Math.PI / 2, -1);
     const L = pc.local, r = pc.roles;
     for (const flip of [1, -1]) {
       let rot, v;
-      if (pose === 'pe') {
-        const d = [L[r.gamma][0] - L[r.right][0], (L[r.gamma][1] - L[r.right][1]) * flip];
-        rot = Math.PI / 2 - Math.atan2(d[1], d[0]);
-        v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
-        if (v[r.beta][0] > v[r.right][0] + 1e-9) return { rot, flip };
-      } else {
+      {
         const d = [L[r.gamma][0] - L[r.beta][0], (L[r.gamma][1] - L[r.beta][1]) * flip];
         rot = -Math.atan2(d[1], d[0]);
         v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
@@ -83,19 +100,65 @@
   function near(rot, ref) { return rot + 2 * Math.PI * Math.round((ref - rot) / (2 * Math.PI)); }
 
   /* Configurações (rot/flip) de cada peça em cada fase da montagem. */
+  function normRad(x) { return Math.atan2(Math.sin(x), Math.cos(x)); }
+
+  /* Configurações de cada peça em cada fase da montagem. Cada peça faz no máximo UM movimento:
+     - mesma "mão" da posição final: só uma rotação (pelo menor ângulo);
+     - "mão" trocada: só uma reflexão, numa reta escolhida para já cair na posição final. */
   function phaseConfs(P) {
     const fc = figConf();
     const out = {};
     ['big', 'p1', 'p2'].forEach((key) => {
-      const o = orientation(P[key], RM.state.pose);
-      const fin = { rot: near(o.rot, fc.rot), flip: o.flip };
-      out[key] = { split: fc, flip: { rot: fc.rot, flip: o.flip }, rot: fin, final: fin };
+      const o = orientation(P[key], RM.state.pose, P, fc);
+      if (o.flip === fc.flip) {
+        const base = { rot: fc.rot, ax: 0, flip: fc.flip };
+        const d = normRad(o.rot - fc.rot);
+        const fin = { rot: fc.rot + d, ax: 0, flip: fc.flip };
+        out[key] = { split: base, flip: base, rot: fin, final: fin, reflects: false, rotates: Math.abs(d) > 1e-3 };
+      } else {
+        // Reflexão pura: L1 = Ref(β) · L0  ⇒  2β = ângulo de L1 · L0ᵀ
+        const a0 = fc.rot, a1 = o.rot;
+        const m00 = Math.cos(a1) * Math.cos(a0) + Math.sin(a1) * o.flip * Math.sin(a0) * fc.flip;
+        const m10 = Math.sin(a1) * Math.cos(a0) - Math.cos(a1) * o.flip * Math.sin(a0) * fc.flip;
+        const beta = Math.atan2(m10, m00) / 2;
+        const split = fc.flip === 1
+          ? { rot: a0, ax: beta - a0, flip: 1 }
+          : { rot: 2 * beta - a0, ax: a0 - beta, flip: -1 };
+        const after = Object.assign({}, split, { flip: -split.flip });
+        out[key] = { split, flip: after, rot: after, final: after, reflects: true, rotates: false };
+      }
     });
     return out;
+  }
+
+  const PIECE_NAME = {
+    big: 'o triângulo grande (<b>ABC</b>)',
+    p1: 'o <span class="c-p1">amarelo</span> (<b>HBA</b>)',
+    p2: 'o <span class="c-p2">verde</span> (<b>HAC</b>)',
+  };
+  function listNames(keys) {
+    const n = keys.map((k) => PIECE_NAME[k]);
+    return n.length <= 1 ? n.join('') : n.slice(0, -1).join(', ') + ' e ' + n[n.length - 1];
+  }
+  function moves() {
+    const C = phaseConfs(pieces(RM.tri()));
+    const keys = ['big', 'p1', 'p2'];
+    return {
+      reflect: keys.filter((k) => C[k].reflects),
+      rotate: keys.filter((k) => C[k].rotates),
+      still: keys.filter((k) => !C[k].reflects && !C[k].rotates),
+    };
   }
   function dims(pc, conf) {
     const b = bbox(screenVerts(pc, Object.assign({ x: 0, y: 0, s: 1, op: 1 }, conf)));
     return { w: b.x1 - b.x0, h: b.y1 - b.y0 };
+  }
+  function placeBottom(pc, base, cx, bottom) {
+    const st = Object.assign({ x: 0, y: 0 }, base);
+    const b = bbox(screenVerts(pc, st));
+    st.x = cx - (b.x0 + b.x1) / 2;
+    st.y = bottom - b.y1;
+    return st;
   }
   function placeCenter(pc, base, cx, cy) {
     const st = Object.assign({ x: 0, y: 0 }, base);
@@ -144,14 +207,15 @@
         const ds = ['split', 'flip', 'rot'].map((ph) => dims(P[key], C[key][ph]));
         D0[key] = { w: Math.max(...ds.map((d) => d.w)), h: Math.max(...ds.map((d) => d.h)) };
       });
-      const gapX = 70, gapY = 82;
+      const gapX = 90, gapY = 82;
       const hRow = Math.max(D0.p1.h, D0.p2.h);
       const k = Math.min(900 / D0.big.w, (880 - gapX) / (D0.p1.w + D0.p2.w), (500 - gapY) / (D0.big.h + hRow));
       S.big = placeCenter(P.big, withS(C.big[kind], k), W / 2, 34 + (D0.big.h * k) / 2);
-      const yRow = 34 + D0.big.h * k + gapY + (hRow * k) / 2;
+      // Os menores ficam apoiados na mesma linha
+      const bottom = 34 + D0.big.h * k + gapY + hRow * k;
       const start = (W - (D0.p1.w + D0.p2.w) * k - gapX) / 2;
-      S.p1 = placeCenter(P.p1, withS(C.p1[kind], k), start + (D0.p1.w * k) / 2, yRow);
-      S.p2 = placeCenter(P.p2, withS(C.p2[kind], k), start + D0.p1.w * k + gapX + (D0.p2.w * k) / 2, yRow);
+      S.p1 = placeBottom(P.p1, withS(C.p1[kind], k), start + (D0.p1.w * k) / 2, bottom);
+      S.p2 = placeBottom(P.p2, withS(C.p2[kind], k), start + D0.p1.w * k + gapX + (D0.p2.w * k) / 2, bottom);
       return S;
     }
 
@@ -217,8 +281,10 @@
   }
 
   function poseName() {
+    if (RM.state.pose === 'fixo') return 'a do <span class="c-p1">amarelo</span>, que <b>fica parado</b>';
     return RM.state.pose === 'pe' ? '<b>em pé</b>, com a hipotenusa na diagonal' : 'com a <b>hipotenusa na base</b>';
   }
+  function cap(html) { return html.replace(/^(<[^>]+>)*([a-zà-ú])/, (m) => m.slice(0, -1) + m.slice(-1).toUpperCase()); }
 
   const REL = {
     c2: { rows: ['ABC', 'HBA'], cols: ['hip', 'og'] },
@@ -253,17 +319,33 @@
         ? '<p>Destacamos △ABC, △HBA e △HAC. Os três têm ângulos <span class="c-beta">β</span>, <span class="c-gamma">γ</span> e 90' + deg + ', mas estão em posições diferentes.</p>'
         : '<p>Agora temos <b>três triângulos</b>: o grande ABC e os dois menores. Vamos separá-los para comparar.</p><p>Repare nas cores dos ângulos: todos têm um <span class="c-beta">β</span>, um <span class="c-gamma">γ</span> e um ângulo reto.</p>' },
     { title: 'Refletindo (espelhando)', layout: 'flip', pieces: 1, angles: 3, labels: 'piece', mirror: true,
-      text: (t, lv) => lv === 'em'
-        ? '<p>Para comparar, levamos os três à mesma posição (' + poseName() + '). Os triângulos com orientação invertida sofrem uma <b>reflexão</b> na reta tracejada.</p><p>Reflexões são isometrias: preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
-        : '<p>Para comparar, vamos colocar os três na mesma posição: ' + poseName() + '.</p><p>Primeiro, <b>espelhamos</b> na linha tracejada os triângulos que estão "do avesso". Espelhar não muda o tamanho nem os ângulos.</p>' },
+      text: (t, lv) => {
+        const mv = moves();
+        let html = '<p>Para comparar, vamos colocar os três na mesma posição: ' + poseName() + '.</p>';
+        if (!mv.reflect.length) return html + '<p>Nenhum triângulo precisa ser espelhado nesta posição.</p>';
+        html += lv === 'em'
+          ? '<p>' + cap(listNames(mv.reflect)) + (mv.reflect.length > 1 ? ' têm' : ' tem') + ' orientação invertida: aplicamos uma <b>reflexão</b> na reta tracejada. Reflexões são isometrias: preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
+          : '<p><b>Espelhamos</b> ' + listNames(mv.reflect) + ' na linha tracejada, como se ' + (mv.reflect.length > 1 ? 'virássemos cada um' : 'o virássemos') + ' do avesso. Espelhar não muda o tamanho nem os ângulos.</p>';
+        if (!mv.rotate.length) html += '<p>Só com isso ' + (mv.reflect.length > 1 ? 'eles já ficam' : 'ele já fica') + ' na posição certa.</p>';
+        return html;
+      } },
     { title: 'Girando', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
-      text: (t, lv) => (RM.state.pose === 'pe'
-        ? (lv === 'em'
-          ? '<p>Uma <b>rotação</b> (outra isometria) põe cada triângulo em pé: ângulo reto embaixo à esquerda, cateto oposto a <span class="c-beta">β</span> na vertical, cateto oposto a <span class="c-gamma">γ</span> na horizontal e a hipotenusa na diagonal.</p>'
-          : '<p>Depois, <b>giramos</b> cada um até ficar <b>em pé</b>, do jeito que estamos acostumados: ângulo reto embaixo, um cateto de pé, outro deitado e a hipotenusa na diagonal.</p><p><span class="c-gamma">γ</span> fica em cima e <span class="c-beta">β</span> à direita nos três.</p>')
-        : (lv === 'em'
-          ? '<p>Uma <b>rotação</b> (outra isometria) leva a hipotenusa de cada triângulo à horizontal, com o vértice de <span class="c-beta">β</span> à esquerda, o de <span class="c-gamma">γ</span> à direita e o ângulo reto acima.</p>'
-          : '<p>Depois, <b>giramos</b> cada um até a hipotenusa ficar deitada, com <span class="c-beta">β</span> à esquerda, <span class="c-gamma">γ</span> à direita e o ângulo reto em cima.</p>')) },
+      text: (t, lv) => {
+        const mv = moves();
+        let html = '';
+        if (mv.rotate.length) {
+          html += lv === 'em'
+            ? '<p>Uma <b>rotação</b> (outra isometria) leva ' + listNames(mv.rotate) + ' à mesma posição.</p>'
+            : '<p>Agora <b>giramos</b> ' + listNames(mv.rotate) + ' até ficar na mesma posição dos outros.</p>';
+        } else {
+          html += '<p>Nenhum triângulo precisa girar nesta posição.</p>';
+        }
+        if (mv.still.length) html += '<p>' + cap(listNames(mv.still)) + (mv.still.length > 1 ? ' ficam parados' : ' fica parado') + (RM.state.pose === 'fixo' ? ': ele é a referência.' : '.') + '</p>';
+        html += '<p>Cada triângulo precisou de, no máximo, <b>um movimento</b>. Agora ' +
+          (RM.state.pose === 'base' ? 'a hipotenusa está deitada nos três, com <span class="c-beta">β</span> à esquerda e <span class="c-gamma">γ</span> à direita.'
+            : 'o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão no mesmo lugar nos três.') + '</p>';
+        return html;
+      } },
     { title: 'Mesma forma, tamanhos diferentes', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
       text: (t, lv) => (lv === 'em'
         ? '<p>Pelo caso <b>AA</b> (ângulo-ângulo):</p>'
@@ -368,10 +450,11 @@
     if (step.mirror) {
       const C = phaseConfs(P);
       ['big', 'p1', 'p2'].forEach((key) => {
-        if (C[key].split.flip === C[key].flip.flip) return;
+        if (!C[key].reflects) return;
         const b = bbox(V[key]);
         const half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 26;
-        const dx = Math.cos(cur[key].rot), dy = -Math.sin(cur[key].rot);
+        const ang = cur[key].rot + (cur[key].ax || 0);
+        const dx = Math.cos(ang), dy = -Math.sin(ang);
         const c = [cur[key].x, cur[key].y];
         out += D.line([c[0] - half * dx, c[1] - half * dy], [c[0] + half * dx, c[1] + half * dy],
           'style="stroke:var(--muted);stroke-width:2;stroke-dasharray:10 7"');
@@ -580,6 +663,7 @@
       y: a.y + (b.y - a.y) * e,
       s: a.s + (b.s - a.s) * e,
       rot: a.rot + (b.rot - a.rot) * e,
+      ax: (a.ax || 0) + ((b.ax || 0) - (a.ax || 0)) * e,
       flip: a.flip + (b.flip - a.flip) * e,
       op: a.op + (b.op - a.op) * e,
     };

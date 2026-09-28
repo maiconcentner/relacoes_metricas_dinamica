@@ -22,10 +22,10 @@
     speed: 1,
     rot: 0,           // rotação da figura, em graus (anti-horário)
     mirror: false,    // figura espelhada
-    pose: 'pe',       // posição para comparar: 'pe' (catetos em pé) | 'base' (hipotenusa na base)
+    pose: 'fixo',     // posição para comparar: 'fixo' (amarelo parado) | 'pe' (em pé) | 'base' (hipotenusa na base)
   };
 
-  const STORE_KEY = 'relacoes-metricas:v1';
+  const STORE_KEY = 'relacoes-metricas:v2';
   const listeners = [];
 
   const RM = (window.RM = {
@@ -97,7 +97,7 @@
     s.snap = [0.1, 0.5, 1].includes(Number(s.snap)) ? Number(s.snap) : 0.5;
     s.rot = RM.normDeg(Number(s.rot) || 0);
     s.mirror = !!s.mirror;
-    if (s.pose !== 'base') s.pose = 'pe';
+    if (!['fixo', 'pe', 'base'].includes(s.pose)) s.pose = 'fixo';
   }
   RM.normDeg = function (d) {
     let x = ((d + 180) % 360 + 360) % 360 - 180;
@@ -130,7 +130,7 @@
     const s = RM.state;
     const parts = [s.view, 'a' + s.a, 'm' + s.m, 's' + s.step, s.level, 'o' + (s.hide ? 1 : 0), 'd' + s.dec];
     if (s.unit) parts.push('u' + s.unit);
-    parts.push('r' + s.rot, 'f' + (s.mirror ? 1 : 0), s.pose === 'pe' ? 'xp' : 'xb');
+    parts.push('r' + s.rot, 'f' + (s.mirror ? 1 : 0), { fixo: 'xf', pe: 'xp', base: 'xb' }[s.pose]);
     return parts.join('~');
   };
   RM.decodeHash = function (hash) {
@@ -148,7 +148,7 @@
       else if (/^u(cm|m)$/.test(tok)) out.unit = tok.slice(1);
       else if (/^r-?[\d.]+$/.test(tok)) out.rot = parseFloat(tok.slice(1));
       else if (/^f[01]$/.test(tok)) out.mirror = tok === 'f1';
-      else if (tok === 'xp' || tok === 'xb') out.pose = tok === 'xp' ? 'pe' : 'base';
+      else if (/^x[fpb]$/.test(tok)) out.pose = { xf: 'fixo', xp: 'pe', xb: 'base' }[tok];
     });
     return Object.keys(out).length ? out : null;
   };
