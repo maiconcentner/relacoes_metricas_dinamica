@@ -759,6 +759,159 @@
     playTimer = setTimeout(() => { if (playing) go(1); }, 3800 / (RM.state.speed || 1));
   }
 
+  /* ---------- Mini-animação para os cartões de dedução ----------
+     Mostra só alguns triângulos: no lugar (dentro de ABC) ou alinhados lado a lado,
+     passando pelas fases split → flip → rot, uma peça e um movimento de cada vez. */
+  function miniLayout(t, keys, phases) {
+    const P = pieces(t);
+    const C = phaseConfs(P);
+    const whole = layout('whole', t, P, {});
+    const ds = keys.map((key) => {
+      const d = ['split', 'flip', 'rot'].map((ph) => dims(P[key], C[key][ph]));
+      return { w: Math.max(...d.map((x) => x.w)), h: Math.max(...d.map((x) => x.h)) };
+    });
+    const gap = 110;
+    const sumW = ds.reduce((acc, d) => acc + d.w, 0);
+    const maxH = Math.max(...ds.map((d) => d.h));
+    const k = Math.min((880 - gap * (keys.length - 1)) / sumW, 380 / maxH);
+    const bottom = 300 + (maxH * k) / 2;
+    let x = (W - sumW * k - gap * (keys.length - 1)) / 2;
+    const S = {};
+    keys.forEach((key, idx) => {
+      const ph = phases[key] || 'inplace';
+      if (ph === 'inplace') S[key] = Object.assign({}, whole[key], { op: 1 });
+      else S[key] = placeBottom(P[key], Object.assign({ s: k, op: 1 }, C[key][ph]), x + (ds[idx].w * k) / 2, bottom);
+      x += ds[idx].w * k + gap;
+    });
+    ['big', 'p1', 'p2'].forEach((key) => { if (!S[key]) S[key] = Object.assign({}, whole[key], { op: 0 }); });
+    S.ghost = whole.big;
+    return S;
+  }
+
+  /* Sequência de fases para alinhar as peças, um movimento por vez. */
+  function alignSequence(t, keys) {
+    const C = phaseConfs(pieces(t));
+    const phases = {};
+    keys.forEach((k) => { phases[k] = 'split'; });
+    const seq = [{ phases: Object.assign({}, phases), move: null }];
+    ['big', 'p1', 'p2'].filter((k) => keys.includes(k)).forEach((k) => {
+      if (C[k].reflects) { phases[k] = 'flip'; seq.push({ phases: Object.assign({}, phases), move: { type: 'flip', key: k } }); }
+      if (C[k].rotates) { phases[k] = 'rot'; seq.push({ phases: Object.assign({}, phases), move: { type: 'rot', key: k, turn: C[k].turn } }); }
+    });
+    keys.forEach((k) => { phases[k] = 'rot'; });
+    seq.push({ phases: Object.assign({}, phases), move: null });
+    return seq;
+  }
+
+  function createMini(svgEl) {
+    let cur = null;
+    let anim = null;
+    let opts = {};
+    let token = 0;
+
+    function draw() {
+      if (!cur) return;
+      const t = opts.t;
+      const P = pieces(t);
+      const fs = D.fs(26);
+      let out = '';
+      if (opts.ghost) {
+        const g = screenVerts(P.big, cur.ghost);
+        out += D.poly(['A', 'B', 'C'].map((n) => g[n]), 'style="fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 6;opacity:.7"');
+      }
+      // No lugar (dentro de ABC), vértices e lados repetidos são escritos uma vez só
+      const seenV = new Set(), seenS = new Set();
+      const shown = ['big', 'p1', 'p2'].filter((k) => cur[k] && cur[k].op >= 0.02);
+      ['big', 'p1', 'p2'].forEach((key) => {
+        const st = cur[key];
+        if (!st || st.op < 0.02) return;
+        const pc = P[key];
+        const v = screenVerts(pc, st);
+        out += '<g style="opacity:' + st.op.toFixed(3) + '">';
+        out += D.poly(pc.names.map((n) => v[n]), 'style="fill:' + pc.fill + ';stroke:' + pc.stroke + ';stroke-width:2.8;stroke-linejoin:round"');
+        const hl = (opts.hl && opts.hl[key]) || {};
+        Object.keys(hl).forEach((side) => {
+          const [p, q] = pc.sides[side];
+          out += D.line(v[p], v[q], 'style="stroke:var(--' + hl[side] + ');stroke-width:8;stroke-linecap:round;opacity:.85"');
+        });
+        const r = pc.roles;
+        const oth = (vn) => pc.names.filter((n) => n !== vn);
+        out += D.angleArc(v[r.beta], v[oth(r.beta)[0]], v[oth(r.beta)[1]], 32, 'var(--beta)', 'β', D.fs(22));
+        out += D.angleArc(v[r.gamma], v[oth(r.gamma)[0]], v[oth(r.gamma)[1]], 32, 'var(--gamma)', 'γ', D.fs(22));
+        out += D.rightMark(v[r.right], v[oth(r.right)[0]], v[oth(r.right)[1]], 12, 'var(--ink)');
+        const G = centroid(v);
+        const dedupe = !!opts.ghost;
+        pc.names.forEach((n) => {
+          if (dedupe && seenV.has(n)) return;
+          seenV.add(n);
+          out += vtext(D.vertexLabelPos(v[n], G, 22), n, D.fs(22), 'var(--muted)');
+        });
+        Object.keys(pc.sides).forEach((side) => {
+          if (dedupe && seenS.has(side)) return;
+          seenS.add(side);
+          const [p, q] = pc.sides[side];
+          const third = pc.names.find((n) => n !== p && n !== q);
+          const color = hl[side] ? 'var(--' + hl[side] + ')' : null;
+          if (dedupe && key === 'big' && side === 'a' && shown.length > 1) {
+            // m e n ficam junto à hipotenusa; a vai numa cota afastada
+            out += D.dimension(v.B, v.C, v.A, 54, (pos) => stext(pos, 'a', fs, color), 'var(--muted)', fs);
+            return;
+          }
+          out += stext(D.sideLabelPos(v[p], v[q], v[third], D.fs(20)), side, fs, color);
+        });
+        out += '</g>';
+      });
+      if (opts.mirrorKey && cur[opts.mirrorKey]) {
+        const st = cur[opts.mirrorKey];
+        const b = bbox(screenVerts(P[opts.mirrorKey], st));
+        const half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 26;
+        const ang = st.rot + (st.ax || 0);
+        const dx = Math.cos(ang), dy = -Math.sin(ang);
+        out += D.line([st.x - half * dx, st.y - half * dy], [st.x + half * dx, st.y + half * dy],
+          'style="stroke:var(--muted);stroke-width:2;stroke-dasharray:10 7"');
+      }
+      svgEl.innerHTML = out;
+    }
+
+    function tweenTo(target, dur, done) {
+      if (anim) anim.cancel();
+      if (!cur || dur <= 0) { cur = target; draw(); if (done) done(); return; }
+      const from = cur;
+      anim = RM.tween(dur, (e) => {
+        cur = { ghost: lerpState(from.ghost, target.ghost, e) };
+        ['big', 'p1', 'p2'].forEach((k) => { cur[k] = lerpState(from[k], target[k], e); });
+        draw();
+      }, () => { anim = null; if (done) done(); });
+    }
+
+    return {
+      /* Vai direto (ou com uma transição) para uma arrumação. */
+      show(o, keys, phases, dur) {
+        token++;
+        opts = Object.assign({}, o);
+        tweenTo(miniLayout(o.t, keys, phases), dur || 0);
+      },
+      /* Alinha as peças, um movimento por vez. onMove(move) é chamado a cada movimento. */
+      align(o, keys, onMove) {
+        const my = ++token;
+        opts = Object.assign({}, o);
+        const seq = alignSequence(o.t, keys);
+        const dur = 800 / (RM.state.speed || 1);
+        let idx = 0;
+        const nextStep = () => {
+          if (my !== token || idx >= seq.length) { opts.mirrorKey = null; draw(); return; }
+          const it = seq[idx++];
+          opts.mirrorKey = it.move && it.move.type === 'flip' ? it.move.key : null;
+          if (onMove) onMove(it.move);
+          tweenTo(miniLayout(o.t, keys, it.phases), dur, () => setTimeout(nextStep, 250));
+        };
+        nextStep();
+      },
+      redraw() { draw(); },
+      moves(t, keys) { return alignSequence(t, keys).map((x) => x.move).filter(Boolean); },
+    };
+  }
+
   /* Desenho compacto de alguns triângulos lado a lado, na mesma posição (usado nos Exercícios).
      opts: { t, keys, hl: {big: {a: 'hl1'}}, label: (key, side) => texto, captions: true } */
   function pairSVG(opts) {
@@ -819,6 +972,8 @@
   RM.sim = {
     get STEPS() { return STEPS; },
     pairSVG,
+    createMini,
+    PIECE_NAME,
     REL,
     ROWS,
     init() {

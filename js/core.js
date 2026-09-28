@@ -96,7 +96,7 @@
     s.m = clamp(Number(s.m) || s.a / 2, minM, s.a - minM);
     s.step = Math.max(0, Math.round(Number(s.step) || 0));
     if (s.level !== 'em') s.level = 'ef';
-    if (!['lab', 'sem', 'exe'].includes(s.view)) s.view = 'lab';
+    if (!['lab', 'sem', 'ded', 'exe'].includes(s.view)) s.view = 'lab';
     s.shown = String(s.shown == null ? 'abchmn' : s.shown).replace(/[^abchmn]/g, '');
     s.dec = clamp(Math.round(Number(s.dec)), 0, 3);
     s.font = clamp(Number(s.font) || 1, 0.85, 1.6);
@@ -147,7 +147,7 @@
     if (!h) return null;
     const out = {};
     h.split('~').forEach((tok) => {
-      if (tok === 'lab' || tok === 'sem' || tok === 'exe') out.view = tok;
+      if (['lab', 'sem', 'ded', 'exe'].includes(tok)) out.view = tok;
       else if (/^L[a-z]*$/.test(tok)) Object.keys(RM.LAYERS).forEach((k) => { out[k] = tok.includes(RM.LAYERS[k]); });
       else if (/^V[abchmn]*$/.test(tok)) out.shown = tok.slice(1);
       else if (tok === 'ef' || tok === 'em') out.level = tok;

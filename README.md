@@ -2,9 +2,9 @@
 
 Material interativo para ensinar as **relações métricas no triângulo retângulo** a partir da **semelhança de triângulos**. Feito para ser projetado em sala e aberto pelos alunos no celular.
 
-## O que já existe (Fase 1)
+## O que já existe
 
-### Laboratório
+### Laboratório (Fase 1)
 - Começa "cru", só com o triângulo. A barra **Mostrar** liga e desliga altura, nomes, valores, ângulos, cores, semicírculo e malha (ou **Tudo** / **Só o triângulo**).
 - O olho de cada medida escolhe quais valores aparecem na figura.
 - Arraste o vértice **A** sobre o semicírculo (o ângulo em A continua reto) ou o vértice **C** para mudar a hipotenusa.
@@ -22,6 +22,11 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 6. Os três **encaixados** pelo ângulo β, mostrando os lados paralelos.
 7. Tabela de lados correspondentes e dedução de cada relação, com os lados destacados na figura e na tabela.
 8. Teorema de Pitágoras como consequência.
+
+### Deduções (Fase 2)
+- Um cartão por relação: c² = a·m, b² = a·n, h² = m·n, a·h = b·c (e 1/h² = 1/b² + 1/c² no nível EM).
+- Cada cartão mostra onde estão os dois triângulos, alinha os dois **um movimento de cada vez**, destaca os lados correspondentes e chega à relação, conferida com os números do triângulo atual.
+- **Pitágoras com áreas** (demonstração de Euclides): o quadrado de cada cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um dos retângulos a·m e a·n dentro do quadrado da hipotenusa; a área nunca muda.
 
 ### Exercícios (primeira parte da Fase 3)
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
@@ -55,7 +60,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 |---|---|
 | `→` `Espaço` `PageDown` | próximo passo (funciona com passador de slides) |
 | `←` `PageUp` | passo anterior |
-| `L` / `S` / `X` | Laboratório / Semelhança / Exercícios |
+| `L` / `S` / `D` / `X` | Laboratório / Semelhança / Deduções / Exercícios |
 | `O` | ocultar ou mostrar valores |
 | `N` | trocar nível EF / EM |
 | `G` / `Shift+G` | girar a figura 15° |
@@ -81,7 +86,9 @@ css/style.css       visual (tema claro/escuro, responsivo)
 js/core.js          estado, cálculos do triângulo, link, animação
 js/draw.js          desenho em SVG (ângulos, rótulos, malha)
 js/lab.js           módulo Laboratório
-js/similarity.js    módulo Semelhança passo a passo
+js/similarity.js    módulo Semelhança passo a passo (e mini-animações)
+js/deductions.js    módulo Deduções (cartões e Pitágoras com áreas)
+js/exercise.js      módulo Exercícios (gerador e solucionador)
 js/app.js           painel do professor, atalhos, inicialização
 ```
 
@@ -89,6 +96,5 @@ Não há dependências nem etapa de build: HTML, CSS e JavaScript puros.
 
 ## Próximas fases
 
-- **Fase 2**: cartões de dedução para cada relação e Pitágoras com áreas.
 - **Fase 3**: aplicações contextualizadas (rampa, escada, sombra). O gerador de exercícios já está pronto.
 - **Fase 4**: caneta e laser para anotar na tela, cenários salvos e QR code.

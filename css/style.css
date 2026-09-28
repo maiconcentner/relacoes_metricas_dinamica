@@ -322,13 +322,14 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
 .mathline {
   font-family: var(--font-math);
   font-size: 1.3rem;
+  line-height: 2.1;
   background: var(--surface-2);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 4px 12px;
   margin: 0 0 10px;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
   font-variant-numeric: tabular-nums;
 }
+.mathline .frac { margin-inline: 2px; }
 .mathline i { font-style: italic; }
 .mathline .num { font-family: var(--font-body); font-size: 0.9rem; color: var(--muted); }
 .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.1; }
@@ -341,6 +342,8 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
 .c-hl1 { color: var(--hl1); font-weight: 700; }
 .c-hl2 { color: var(--hl2); font-weight: 700; }
 .result {
+  display: inline-block;
+  line-height: 1.6;
   font-weight: 600;
   outline: 2px solid var(--hl1);
   border-radius: 6px;
@@ -487,6 +490,21 @@ kbd {
 .cv-name small { color: var(--muted); margin-left: 4px; }
 details.card summary { cursor: pointer; }
 .stage.pair { max-width: 560px; max-height: none; background: var(--surface-2); border-radius: 8px; margin-block: 4px 10px; touch-action: auto; }
+
+/* ===== Deduções ===== */
+.ded-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ded-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  border: 1.5px solid var(--line); background: var(--surface-2);
+  border-radius: 8px; padding: 8px 12px; text-align: left;
+}
+.ded-card[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.ded-f { font-family: var(--font-math); font-size: 1.25rem; }
+.ded-f i { font-style: italic; }
+.ded-sub { font-size: 0.82rem; color: var(--muted); }
+.moves { margin: 0 0 10px; padding-left: 1.4em; display: flex; flex-direction: column; gap: 4px; }
+.moves li { color: var(--muted); }
+.moves li.live { color: var(--ink); font-weight: 700; }
 
 /* ===== Responsivo ===== */
 @media (max-width: 900px) {
