@@ -29,6 +29,7 @@
     <nav class="tabs" role="tablist" aria-label="Módulos">
       <button class="tab" role="tab" id="tab-lab" data-view="lab">Laboratório</button>
       <button class="tab" role="tab" id="tab-sem" data-view="sem">Semelhança passo a passo</button>
+      <button class="tab" role="tab" id="tab-exe" data-view="exe">Exercícios</button>
     </nav>
 
     <div class="tools">
@@ -173,6 +174,94 @@
     </aside>
   </main>
 
+  <!-- ============ EXERCÍCIOS ============ -->
+  <main class="view" id="view-exe" aria-labelledby="tab-exe" hidden>
+    <section class="stage-wrap">
+      <div class="figbar" role="toolbar" aria-label="Posição da figura">
+        <div class="fb-group">
+          <button class="fb" data-act="rotL" title="Girar 15° no sentido anti-horário (G)" aria-label="Girar 15° no sentido anti-horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="rotR" title="Girar 15° no sentido horário" aria-label="Girar 15° no sentido horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="mirror" title="Espelhar a figura (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.5 2.5"/><path d="M9 7 3 18h6Z M15 7l6 11h-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span>Espelhar</span>
+          </button>
+          <button class="fb" data-act="stand" title="Deixar a figura em pé: ângulo reto embaixo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16h14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 16h4v4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>Em pé</span>
+          </button>
+          <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
+            <span>Sortear posição</span>
+          </button>
+          <button class="fb" data-act="reset" title="Voltar à posição padrão" aria-label="Voltar à posição padrão">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20 12 8l6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span>Padrão</span>
+          </button>
+        </div>
+      </div>
+      <div class="layerbar" role="group" aria-label="Mostrar na figura do exercício">
+        <span class="fb-label">Mostrar</span>
+        <button class="chip" data-exlayer="names">Nomes</button>
+        <button class="chip" data-exlayer="angles">Ângulos</button>
+        <button class="chip" data-exlayer="fill">Cores</button>
+      </div>
+      <svg class="stage" id="exe-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Figura do exercício"></svg>
+      <div class="stepper">
+        <button class="step-btn" id="ex-prev" aria-label="Passo anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dots" id="ex-dots"></div>
+        <button class="btn btn-ghost" id="ex-restart">Recomeçar</button>
+        <button class="btn btn-ghost" id="ex-all">Mostrar tudo</button>
+        <button class="step-btn step-next" id="ex-next" aria-label="Próximo passo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="ex-step">
+        <p class="eyebrow" id="ex-step-count"></p>
+        <h2 id="ex-step-title"></h2>
+        <div class="step-body" id="ex-step-body"></div>
+      </div>
+    </section>
+    <aside class="side">
+      <div class="card">
+        <h2>Enunciado</h2>
+        <div id="ex-statement" class="step-body"></div>
+        <div class="share-row" style="margin-top:8px"><span class="note" id="ex-copy-msg" aria-live="polite"></span><button class="btn btn-ghost" id="ex-copy">Copiar enunciado</button></div>
+      </div>
+      <div class="card">
+        <h2>Gerar exercício</h2>
+        <p class="plabel">Foco <span class="muted">— relações que devem aparecer</span></p>
+        <div class="chips" id="ex-focus"></div>
+        <div class="field-inline">
+          <span class="flabel">Passos</span>
+          <div class="seg seg-sm" id="ex-steps"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button></div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Números</span>
+          <div class="seg seg-sm" id="ex-nums"><button data-v="int">Inteiros</button><button data-v="dec">Decimais</button></div>
+        </div>
+        <label class="switch"><input type="checkbox" id="ex-randpos"><span>Figura em posição aleatória</span></label>
+        <button class="btn" id="ex-generate">Gerar exercício</button>
+        <p class="note" id="ex-msg" aria-live="polite"></p>
+      </div>
+      <details class="card">
+        <summary><b>Montar o meu exercício</b></summary>
+        <p class="note">Escolha os dados e a medida pedida. Usa o triângulo do exercício atual.</p>
+        <div id="ex-custom" class="cv-list"></div>
+        <div class="share-row">
+          <button class="btn btn-ghost" id="ex-use-lab">Usar o triângulo do Laboratório</button>
+          <button class="btn" id="ex-apply">Resolver este</button>
+        </div>
+        <p class="note" id="ex-cmsg" aria-live="polite"></p>
+      </details>
+    </aside>
+  </main>
+
   <!-- ============ PAINEL DO PROFESSOR ============ -->
   <div class="scrim" id="scrim" hidden></div>
   <aside class="panel" id="panel" aria-label="Painel do professor" hidden>
@@ -293,7 +382,7 @@
         <dl class="keys">
           <dt><kbd>→</kbd> <kbd>Espaço</kbd></dt><dd>Próximo passo (funciona com passador de slides)</dd>
           <dt><kbd>←</kbd></dt><dd>Passo anterior</dd>
-          <dt><kbd>L</kbd> <kbd>S</kbd></dt><dd>Laboratório / Semelhança</dd>
+          <dt><kbd>L</kbd> <kbd>S</kbd> <kbd>X</kbd></dt><dd>Laboratório / Semelhança / Exercícios</dd>
           <dt><kbd>O</kbd></dt><dd>Ocultar ou mostrar valores</dd>
           <dt><kbd>N</kbd></dt><dd>Trocar nível EF / EM</dd>
           <dt><kbd>G</kbd> <kbd>⇧G</kbd></dt><dd>Girar a figura 15° (com Shift, no outro sentido)</dd>
@@ -311,6 +400,7 @@
 <script src="js/draw.js"></script>
 <script src="js/lab.js"></script>
 <script src="js/similarity.js"></script>
+<script src="js/exercise.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -759,6 +759,58 @@
     playTimer = setTimeout(() => { if (playing) go(1); }, 3800 / (RM.state.speed || 1));
   }
 
+  /* Desenho compacto de alguns triângulos lado a lado, na mesma posição (usado nos Exercícios).
+     opts: { t, keys, hl: {big: {a: 'hl1'}}, label: (key, side) => texto, captions: true } */
+  function pairSVG(opts) {
+    const t = opts.t;
+    const P = pieces(t);
+    const pose = RM.state.pose === 'base' ? 'base' : 'fixo';
+    const fc0 = { rot: 0, flip: 1 };
+    const keys = opts.keys;
+    const confs = {};
+    keys.forEach((key) => { confs[key] = orientation(P[key], pose, P, fc0); });
+    const W2 = 600, H2 = 270, gap = 70;
+    const ds = keys.map((key) => dims(P[key], confs[key]));
+    const sumW = ds.reduce((a, d) => a + d.w, 0);
+    const maxH = Math.max(...ds.map((d) => d.h));
+    const k = Math.min((W2 - 80 - gap * (keys.length - 1)) / sumW, 170 / maxH);
+    const bottom = 40 + maxH * k;
+    let x = (W2 - sumW * k - gap * (keys.length - 1)) / 2;
+    const fs = 22;
+    let out = '';
+    keys.forEach((key, idx) => {
+      const pc = P[key];
+      const st = placeLeftBottom(pc, Object.assign({ s: k, op: 1 }, confs[key]), x, bottom);
+      x += ds[idx].w * k + gap;
+      const v = screenVerts(pc, st);
+      out += D.poly(pc.names.map((n) => v[n]), 'style="fill:' + pc.fill + ';stroke:' + pc.stroke + ';stroke-width:2.6;stroke-linejoin:round"');
+      const hl = (opts.hl && opts.hl[key]) || {};
+      Object.keys(hl).forEach((side) => {
+        const [p, q] = pc.sides[side];
+        out += D.line(v[p], v[q], 'style="stroke:var(--' + hl[side] + ');stroke-width:7;stroke-linecap:round;opacity:.85"');
+      });
+      const r = pc.roles;
+      const oth = (vn) => pc.names.filter((n) => n !== vn);
+      out += D.angleArc(v[r.beta], v[oth(r.beta)[0]], v[oth(r.beta)[1]], 24, 'var(--beta)', 'β', 18);
+      out += D.angleArc(v[r.gamma], v[oth(r.gamma)[0]], v[oth(r.gamma)[1]], 24, 'var(--gamma)', 'γ', 18);
+      out += D.rightMark(v[r.right], v[oth(r.right)[0]], v[oth(r.right)[1]], 11, 'var(--ink)');
+      Object.keys(pc.sides).forEach((side) => {
+        const [p, q] = pc.sides[side];
+        const third = pc.names.find((n) => n !== p && n !== q);
+        const txt = opts.label ? opts.label(key, side) : side;
+        if (!txt) return;
+        const color = hl[side] ? 'var(--' + hl[side] + ')' : null;
+        out += D.text(D.sideLabelPos(v[p], v[q], v[third], 18), txt,
+          'class="slabel" font-size="' + fs + '"' + (color ? ' style="fill:' + color + '"' : ''));
+      });
+      if (opts.captions !== false) {
+        const b = bbox(v);
+        out += D.text([(b.x0 + b.x1) / 2, bottom + 52], '△' + pc.name, 'class="vlabel" font-size="20" style="fill:' + pc.stroke + '"');
+      }
+    });
+    return '<svg class="stage pair" viewBox="0 0 ' + W2 + ' ' + H2 + '" role="img" aria-label="Triângulos semelhantes lado a lado">' + out + '</svg>';
+  }
+
   function buildDots() {
     dotsEl.innerHTML = STEPS.map((s, idx) =>
       '<button class="dot" role="tab" data-step="' + idx + '" aria-label="Passo ' + (idx + 1) + ': ' + s.title + '" title="' + (idx + 1) + '. ' + s.title + '"></button>').join('');
@@ -766,6 +818,9 @@
 
   RM.sim = {
     get STEPS() { return STEPS; },
+    pairSVG,
+    REL,
+    ROWS,
     init() {
       svg = document.getElementById('sem-svg');
       titleEl = document.getElementById('step-title');

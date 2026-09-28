@@ -23,6 +23,15 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 7. Tabela de lados correspondentes e dedução de cada relação, com os lados destacados na figura e na tabela.
 8. Teorema de Pitágoras como consequência.
 
+### Exercícios (primeira parte da Fase 3)
+- **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
+- **Montar o meu**: marque quais medidas são dados e qual é pedida; o solucionador diz se dá para resolver.
+- A figura começa só com os dados e o **x**. O solucionador avança um passo por clique (setas ou passador de slides):
+  - quais triângulos são semelhantes (colore os dois e mostra os dois lado a lado, na mesma posição);
+  - a proporção, com os lados correspondentes destacados;
+  - a conta (multiplicação cruzada) e o valor encontrado, que aparece na figura.
+- Botão para copiar o enunciado.
+
 ### Posição da figura
 - Barra acima de cada figura para **girar** (15° por clique), **espelhar**, deixar **em pé**, **sortear uma posição** qualquer ou voltar ao **padrão**.
 - No Laboratório, arrastar em qualquer ponto fora dos vértices gira a figura livremente. As medidas e as relações continuam valendo em qualquer posição.
@@ -46,7 +55,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 |---|---|
 | `→` `Espaço` `PageDown` | próximo passo (funciona com passador de slides) |
 | `←` `PageUp` | passo anterior |
-| `L` / `S` | Laboratório / Semelhança |
+| `L` / `S` / `X` | Laboratório / Semelhança / Exercícios |
 | `O` | ocultar ou mostrar valores |
 | `N` | trocar nível EF / EM |
 | `G` / `Shift+G` | girar a figura 15° |
@@ -81,5 +90,5 @@ Não há dependências nem etapa de build: HTML, CSS e JavaScript puros.
 ## Próximas fases
 
 - **Fase 2**: cartões de dedução para cada relação e Pitágoras com áreas.
-- **Fase 3**: desafios gerados automaticamente e aplicações (rampa, escada, sombra).
+- **Fase 3**: aplicações contextualizadas (rampa, escada, sombra). O gerador de exercícios já está pronto.
 - **Fase 4**: caneta e laser para anotar na tela, cenários salvos e QR code.

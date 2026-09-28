@@ -20,6 +20,8 @@
 
     $('view-lab').hidden = s.view !== 'lab';
     $('view-sem').hidden = s.view !== 'sem';
+    $('view-exe').hidden = s.view !== 'exe';
+    $('tab-exe').setAttribute('aria-selected', s.view === 'exe');
     $('tab-lab').setAttribute('aria-selected', s.view === 'lab');
     $('tab-sem').setAttribute('aria-selected', s.view === 'sem');
 
@@ -213,9 +215,12 @@
     }
     if (s.view === 'sem' && (key === 'ArrowLeft' || key === 'PageUp')) { e.preventDefault(); RM.sim.prev(); return; }
     if (s.view === 'sem' && key === 'Home') { e.preventDefault(); RM.sim.first(); return; }
+    if (s.view === 'exe' && (key === 'ArrowRight' || key === 'PageDown' || (key === ' ' && tag !== 'button'))) { e.preventDefault(); RM.exe.next(); return; }
+    if (s.view === 'exe' && (key === 'ArrowLeft' || key === 'PageUp')) { e.preventDefault(); RM.exe.prev(); return; }
     switch (key.toLowerCase()) {
       case 'l': RM.set({ view: 'lab' }); break;
       case 's': RM.set({ view: 'sem' }); break;
+      case 'x': RM.set({ view: 'exe' }); break;
       case 'o': RM.set({ hide: !s.hide }); break;
       case 'n': RM.set({ level: s.level === 'ef' ? 'em' : 'ef' }); break;
       case 'f': toggleFullscreen(); break;
@@ -252,11 +257,12 @@
     syncUI();
     RM.lab.init();
     RM.sim.init();
+    RM.exe.init();
 
     // Em telas estreitas, aumenta as letras das figuras para continuarem legíveis.
     let lastBoost = 0;
     const updateBoost = () => {
-      const svg = RM.state.view === 'lab' ? $('lab-svg') : $('sem-svg');
+      const svg = $({ lab: 'lab-svg', sem: 'sem-svg', exe: 'exe-svg' }[RM.state.view]);
       const w = svg.getBoundingClientRect().width;
       if (!w) return;
       const boost = RM.clamp(620 / w, 1, 1.8);
@@ -265,6 +271,7 @@
       RM.draw.screenBoost = boost;
       RM.lab.render();
       RM.sim.render();
+      RM.exe.render();
     };
     window.addEventListener('resize', updateBoost);
     RM.on((changed) => { if (changed.includes('view')) { lastBoost = 0; updateBoost(); } });
