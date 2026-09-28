@@ -102,9 +102,9 @@
   /* Configurações (rot/flip) de cada peça em cada fase da montagem. */
   function normRad(x) { return Math.atan2(Math.sin(x), Math.cos(x)); }
 
-  /* Configurações de cada peça em cada fase da montagem. Cada peça faz no máximo UM movimento:
+  /* Configurações de cada peça em cada fase da montagem:
      - mesma "mão" da posição final: só uma rotação (pelo menor ângulo);
-     - "mão" trocada: só uma reflexão, numa reta escolhida para já cair na posição final. */
+     - "mão" trocada: reflexão numa reta vertical ou horizontal (fácil de ver) e depois rotação. */
   function phaseConfs(P) {
     const fc = figConf();
     const out = {};
@@ -116,16 +116,21 @@
         const fin = { rot: fc.rot + d, ax: 0, flip: fc.flip };
         out[key] = { split: base, flip: base, rot: fin, final: fin, reflects: false, rotates: Math.abs(d) > 1e-3 };
       } else {
-        // Reflexão pura: L1 = Ref(β) · L0  ⇒  2β = ângulo de L1 · L0ᵀ
-        const a0 = fc.rot, a1 = o.rot;
-        const m00 = Math.cos(a1) * Math.cos(a0) + Math.sin(a1) * o.flip * Math.sin(a0) * fc.flip;
-        const m10 = Math.sin(a1) * Math.cos(a0) - Math.cos(a1) * o.flip * Math.sin(a0) * fc.flip;
-        const beta = Math.atan2(m10, m00) / 2;
+        // Espelho vertical (β = 90°) ou horizontal (β = 0°): o que deixar o giro seguinte menor.
+        // Depois da reflexão na reta de ângulo β, a parte de rotação vira 2β − θ.
+        const a0 = fc.rot;
+        let best = null;
+        [Math.PI / 2, 0].forEach((beta) => {
+          const d = normRad(o.rot - (2 * beta - a0));
+          if (!best || Math.abs(d) < Math.abs(best.d) - 1e-6) best = { beta, d };
+        });
+        const beta = best.beta;
         const split = fc.flip === 1
           ? { rot: a0, ax: beta - a0, flip: 1 }
           : { rot: 2 * beta - a0, ax: a0 - beta, flip: -1 };
         const after = Object.assign({}, split, { flip: -split.flip });
-        out[key] = { split, flip: after, rot: after, final: after, reflects: true, rotates: false };
+        const fin = Object.assign({}, after, { rot: after.rot + best.d });
+        out[key] = { split, flip: after, rot: fin, final: fin, reflects: true, rotates: Math.abs(best.d) > 1e-3 };
       }
     });
     return out;
@@ -341,7 +346,7 @@
           html += '<p>Nenhum triângulo precisa girar nesta posição.</p>';
         }
         if (mv.still.length) html += '<p>' + cap(listNames(mv.still)) + (mv.still.length > 1 ? ' ficam parados' : ' fica parado') + (RM.state.pose === 'fixo' ? ': ele é a referência.' : '.') + '</p>';
-        html += '<p>Cada triângulo precisou de, no máximo, <b>um movimento</b>. Agora ' +
+        html += '<p>Agora ' +
           (RM.state.pose === 'base' ? 'a hipotenusa está deitada nos três, com <span class="c-beta">β</span> à esquerda e <span class="c-gamma">γ</span> à direita.'
             : 'o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão no mesmo lugar nos três.') + '</p>';
         return html;
