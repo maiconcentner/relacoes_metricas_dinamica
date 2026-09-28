@@ -25,7 +25,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 
 ### Deduções (Fase 2)
 - Um cartão por relação: c² = a·m, b² = a·n, h² = m·n, a·h = b·c (e 1/h² = 1/b² + 1/c² no nível EM).
-- Cada cartão mostra onde estão os dois triângulos, alinha os dois **um movimento de cada vez**, destaca os lados correspondentes e chega à relação, conferida com os números do triângulo atual.
+- Cada cartão mostra onde estão os dois triângulos, separa os dois e os alinha com **um movimento por clique** (separar, espelhar, girar...), destaca os lados correspondentes e chega à relação, conferida com os números do triângulo atual.
+- Em todo o material, nenhuma transformação começa sozinha: cada uma espera o clique em **avançar**. Voltar desfaz o movimento com animação.
 - O botão **Rever movimento** repete a animação do passo atual (nas Deduções e nos Exercícios).
 - **Pitágoras com áreas** (demonstração de Euclides): começa só com o triângulo; cada quadrado **cresce** a partir do seu lado, um de cada vez; a altura desce e corta o quadrado maior em a·m e a·n; então cada quadrado de cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um desses retângulos. A área aparece junto da figura e não muda durante os movimentos.
 - Botão **▶** para reproduzir a dedução inteira sozinha.
@@ -36,7 +37,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - **Montar o meu**: marque quais medidas são dados e qual é pedida; o solucionador diz se dá para resolver.
 - **Resolver por**: Semelhança, Fórmula ou As duas (padrão: primeiro a semelhança, depois a conferência pela fórmula).
 - A figura começa só com os dados e o **x**. O solucionador avança um passo por clique (setas ou passador de slides):
-  - quais triângulos são semelhantes: a própria figura separa os dois e os alinha, um movimento de cada vez, com os dados e o x nos lados;
+  - quais triângulos comparar; depois a própria figura separa os dois e os alinha, **um movimento por clique**, com os dados e o x nos lados;
   - a proporção, com os lados correspondentes destacados;
   - a conta (multiplicação cruzada) e o valor encontrado, que aparece na figura.
 - Botão para copiar o enunciado.

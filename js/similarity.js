@@ -795,7 +795,7 @@
     keys.forEach((k) => { phases[k] = 'split'; });
     const seq = [{ phases: Object.assign({}, phases), move: null }];
     ['big', 'p1', 'p2'].filter((k) => keys.includes(k)).forEach((k) => {
-      if (C[k].reflects) { phases[k] = 'flip'; seq.push({ phases: Object.assign({}, phases), move: { type: 'flip', key: k } }); }
+      if (C[k].reflects) { phases[k] = 'flip'; seq.push({ phases: Object.assign({}, phases), move: { type: 'flip', key: k, axis: C[k].axis } }); }
       if (C[k].rotates) { phases[k] = 'rot'; seq.push({ phases: Object.assign({}, phases), move: { type: 'rot', key: k, turn: C[k].turn } }); }
     });
     keys.forEach((k) => { phases[k] = 'rot'; });
@@ -917,6 +917,7 @@
       redraw() { draw(); },
       stop() { token++; if (anim) { anim.cancel(); anim = null; } },
       moves(t, keys) { return alignSequence(t, keys).map((x) => x.move).filter(Boolean); },
+      seq(t, keys) { return alignSequence(t, keys); },
     };
   }
 
@@ -972,6 +973,26 @@
     return '<svg class="stage pair" viewBox="0 0 ' + W2 + ' ' + H2 + '" role="img" aria-label="Triângulos semelhantes lado a lado">' + out + '</svg>';
   }
 
+  /* Título e texto de um movimento (usados nos cartões e nos exercícios). */
+  function describeMove(mv) {
+    const short = { big: 'o triângulo grande', p1: 'o amarelo', p2: 'o verde' }[mv.key];
+    if (mv.type === 'flip') {
+      const vertical = Math.abs(Math.cos(mv.axis)) < 0.5;
+      return {
+        title: 'Espelhando ' + short,
+        html: '<p><b>Espelhamos</b> ' + PIECE_NAME[mv.key] + ' na linha tracejada ' +
+          (vertical ? '(em pé): o que estava à esquerda passa para a direita.' : '(deitada): ele fica de cabeça para baixo.') +
+          '</p><p>Espelhar não muda o tamanho nem os ângulos.</p>',
+      };
+    }
+    const deg = Math.round(Math.abs(mv.turn) * 180 / Math.PI);
+    const dir = mv.turn > 0 ? 'anti-horário' : 'horário';
+    return {
+      title: 'Girando ' + short,
+      html: '<p><b>Giramos</b> ' + PIECE_NAME[mv.key] + ' ' + deg + '° no sentido ' + dir + ', em torno do seu centro.</p><p>Girar não muda o tamanho nem os ângulos.</p>',
+    };
+  }
+
   function buildDots() {
     dotsEl.innerHTML = STEPS.map((s, idx) =>
       '<button class="dot" role="tab" data-step="' + idx + '" aria-label="Passo ' + (idx + 1) + ': ' + s.title + '" title="' + (idx + 1) + '. ' + s.title + '"></button>').join('');
@@ -981,6 +1002,7 @@
     get STEPS() { return STEPS; },
     pairSVG,
     createMini,
+    describeMove,
     PIECE_NAME,
     REL,
     ROWS,

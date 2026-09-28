@@ -236,28 +236,48 @@
         const fillFig = { fill: keys, hl: R.vars.map((v) => [v, v === x ? 'hl1' : 'hl2']) };
 
         if (cfg.method !== 'formula') {
+          const inplace = {}, aligned = {};
+          keys.forEach((k) => { inplace[k] = 'inplace'; aligned[k] = 'rot'; });
+          const seq = mini.seq(t, keys);
           steps.push({
-            title: pre + 'Quais triângulos são semelhantes?',
+            title: pre + 'Quais triângulos vamos comparar?',
             html: '<p>As medidas ' + listAnd(R.vars.map((v) => sym(v))) + ' aparecem juntas nos triângulos ' + names + '.</p>' +
-              '<p>Eles são <b>semelhantes</b> (caso AA): os dois têm um ângulo reto e ' + common + '.</p>' +
-              '<p>Na figura, separamos os dois e colocamos na mesma posição, <b>um movimento de cada vez</b>.</p>',
-            mini: { keys, mode: 'align', label: labeler(before) },
+              '<p>Vamos compará-los: primeiro separamos os dois, depois colocamos na mesma posição, <b>um movimento por clique</b>.</p>',
+            mini: { keys, phases: inplace, ghost: true, label: labeler(before) },
             found: found.slice(),
+          });
+          steps.push({
+            title: pre + 'Separando os triângulos',
+            move: true,
+            html: '<p>Tiramos os dois de dentro de △ABC e colocamos lado a lado, ainda na posição em que estavam.</p>',
+            mini: { keys, phases: seq[0].phases, label: labeler(before) },
+            found: found.slice(),
+          });
+          seq.slice(1, -1).forEach((it) => {
+            const dsc = RM.sim.describeMove(it.move);
+            steps.push({
+              title: pre + dsc.title,
+              move: true,
+              html: dsc.html,
+              mini: { keys, phases: it.phases, mirrorKey: it.move.type === 'flip' ? it.move.key : null, label: labeler(before) },
+              found: found.slice(),
+            });
           });
           const letters = fr(i(r1[c1]), i(r2[c1])) + ' = ' + fr(i(r1[c2]), i(r2[c2]));
           const nums = fr('<span class="c-hl1">' + val(r1[c1]) + '</span>', '<span class="c-hl1">' + val(r2[c1]) + '</span>') + ' = ' +
             fr('<span class="c-hl2">' + val(r1[c2]) + '</span>', '<span class="c-hl2">' + val(r2[c2]) + '</span>');
           steps.push({
             title: pre + 'Montando a proporção',
-            html: '<p>Na mesma posição, comparamos os lados correspondentes: <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
+            html: '<p>Na mesma posição, os dois têm um ângulo reto e ' + common + ' nos mesmos lugares: são <b>semelhantes</b> (caso AA).</p>' +
+              '<p>Comparamos os lados correspondentes: <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
               ' e <span class="c-hl2">' + COLNAME[c2] + '</span> com ' + COLNAME[c2] + '.</p>' + ml(letters) + ml(nums),
-            mini: { keys, mode: 'aligned', hl, label: labeler(before) },
+            mini: { keys, phases: aligned, hl, label: labeler(before) },
             found: found.slice(),
           });
           steps.push({
             title: pre + 'Calculando ' + (x === e.target ? 'x' : x),
             html: '<p>Multiplicamos cruzado (como na regra de três) e isolamos ' + sym(x) + ':</p>' + calcSim,
-            mini: { keys, mode: 'aligned', hl, label: labeler(after) },
+            mini: { keys, phases: aligned, hl, label: labeler(after) },
             found: found.concat([x]),
           });
         }
@@ -368,15 +388,23 @@
     if (!ex || !ex.sol) { if (mini) mini.stop(); els.svg.innerHTML = ''; return; }
     const st = ex.sol[ex.cur];
     if (!st || !st.mini) { if (mini) mini.stop(); renderFig(); return; }
-    const o = { t: ex.t, hl: st.mini.hl, label: st.mini.label };
-    const inplace = {}, aligned = {};
-    st.mini.keys.forEach((k) => { inplace[k] = 'inplace'; aligned[k] = 'rot'; });
-    if (st.mini.mode === 'align' && dir === 1) {
-      mini.show(Object.assign({}, o, { ghost: true }), st.mini.keys, inplace, 0);
-      mini.align(o, st.mini.keys);
-    } else {
-      mini.show(o, st.mini.keys, aligned, 0);
-    }
+    const m = st.mini;
+    const o = { t: ex.t, hl: m.hl, label: m.label, ghost: m.ghost, mirrorKey: m.mirrorKey };
+    // Anima só entre passos vizinhos com os mesmos triângulos; senão, vai direto
+    const prev = ex.sol[ex.cur - dir];
+    const same = prev && prev.mini && prev.mini.keys.join() === m.keys.join();
+    const dur = Math.abs(dir) === 1 && same ? 900 / (RM.state.speed || 1) : 0;
+    mini.show(o, m.keys, m.phases, dur);
+  }
+
+  /* Refaz a solução (a quantidade de movimentos depende da posição da figura). */
+  function rebuild() {
+    if (!ex || !ex.sol) return;
+    const cur = ex.cur;
+    const sol = buildSolution(ex);
+    sol.unshift({ title: 'Enunciado', fig: {}, found: [] });
+    ex.sol = sol;
+    ex.cur = RM.clamp(cur, 0, sol.length - 1);
   }
 
   function renderFig() {
@@ -508,7 +536,7 @@
     els.stepBody.innerHTML = ex.cur === 0
       ? '<p>' + statement(ex) + '</p><p class="note">Toque em <b>Próximo passo</b> para resolver com a turma.</p>'
       : st.html;
-    document.getElementById('ex-replay').hidden = !(st && st.mini && st.mini.mode === 'align');
+    document.getElementById('ex-replay').hidden = !(st && st.move);
     els.prev.disabled = ex.cur === 0;
     els.next.disabled = ex.cur >= ex.sol.length - 1;
     els.dots.innerHTML = ex.sol.map((s, idx) =>
@@ -653,7 +681,11 @@
         render(); renderSide();
       }));
       els.prev.addEventListener('click', () => go(-1));
-      document.getElementById('ex-replay').addEventListener('click', () => showStep(1));
+      document.getElementById('ex-replay').addEventListener('click', () => {
+        if (!ex || ex.cur === 0) return;
+        ex.cur -= 1; showStep(0);   // estado anterior, sem animar
+        ex.cur += 1; showStep(1);   // refaz só este movimento
+      });
       els.next.addEventListener('click', () => go(1));
       document.getElementById('ex-all').addEventListener('click', () => { if (ex) go(ex.sol.length); });
       document.getElementById('ex-restart').addEventListener('click', () => { if (ex) go(-ex.sol.length); });
@@ -671,7 +703,8 @@
       });
 
       RM.on((changed) => {
-        if (['rot', 'mirror', 'font', 'unit', 'dec'].some((k) => changed.includes(k))) { render(); renderSide(); }
+        if (['rot', 'mirror', 'pose'].some((k) => changed.includes(k))) rebuild();
+        if (['rot', 'mirror', 'pose', 'font', 'unit', 'dec'].some((k) => changed.includes(k))) { render(); renderSide(); }
       });
 
       // Começa com um exemplo pronto: h² = m·n, um passo

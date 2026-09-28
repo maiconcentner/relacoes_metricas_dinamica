@@ -32,7 +32,6 @@
   let steps = [];
   let area = { gc: 0, gb: 0, ga: 0, ext: 0, sc: 0, sb: 0, fillC: 0, fillB: 0 };
   let areaAnim = null;
-  let liveMove = -1;
 
   /* ---------- Cartões de semelhança ---------- */
   function simSteps(card) {
@@ -54,46 +53,41 @@
       fr('<span class="c-hl2">' + i(r1[c2]) + '</span>', '<span class="c-hl2">' + i(r2[c2]) + '</span>');
     const cross = i(r1[c1]) + ' · ' + i(r2[c2]) + ' = ' + i(r2[c1]) + ' · ' + i(r1[c2]);
 
-    return [
+    const t0 = RM.tri();
+    const seq = mini.seq(t0, keys);
+    const md = (dir) => (Math.abs(dir) === 1 ? 900 / (RM.state.speed || 1) : 0);
+    const out = [
       {
         title: 'Onde estão os triângulos',
         html: () => '<p>A altura <b>AH</b> divide △ABC em dois triângulos menores. Para esta relação comparamos ' + pairTxt + '.</p>' +
           '<p>O contorno tracejado é o triângulo ABC inteiro.</p>',
-        enter: (dir) => mini.show({ t: RM.tri(), ghost: true }, keys, inplace, dir === -1 ? 700 / RM.state.speed : 0),
+        enter: (dir) => mini.show({ t: RM.tri(), ghost: true }, keys, inplace, md(dir)),
       },
       {
-        title: 'Colocando na mesma posição',
-        replay: true,
-        keys,
-        html: () => {
-          const moves = mini.moves(RM.tri(), keys);
-          const items = moves.map((mv, idx) => {
-            const name = RM.sim.PIECE_NAME[mv.key];
-            const txt = mv.type === 'flip' ? 'Espelhar ' + name
-              : 'Girar ' + name + ' ' + Math.round(Math.abs(mv.turn) * 180 / Math.PI) + '° no sentido ' + (mv.turn > 0 ? 'anti-horário' : 'horário');
-            return '<li data-move="' + idx + '"' + (idx === liveMove ? ' class="live"' : '') + '>' + txt + '</li>';
-          });
-          return '<p>Separamos os dois e colocamos na mesma posição, <b>um movimento de cada vez</b>:</p>' +
-            (items.length ? '<ol class="moves">' + items.join('') + '</ol>' : '<p>Nenhum precisa girar nem espelhar.</p>') +
-            '<p>Agora o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão nos mesmos lugares: os triângulos são <b>semelhantes</b> (caso AA).</p>';
-        },
-        enter: (dir) => {
-          if (dir !== 1) { liveMove = -1; mini.show({ t: RM.tri() }, keys, aligned, 0); return; }
-          liveMove = -1;
-          mini.show({ t: RM.tri(), ghost: true }, keys, inplace, 0);
-          let n = -1;
-          mini.align({ t: RM.tri() }, keys, (mv) => {
-            if (mv) { n++; liveMove = n; } else if (n >= 0) liveMove = -1;
-            renderText();
-          });
-        },
+        title: 'Separando os triângulos',
+        move: true, dur: 900,
+        html: () => '<p>Tiramos os dois de dentro de △ABC e colocamos lado a lado, ainda na mesma posição em que estavam.</p>' +
+          '<p>Agora vamos deixá-los na mesma posição, <b>um movimento por clique</b>.</p>',
+        enter: (dir) => mini.show({ t: RM.tri() }, keys, seq[0].phases, md(dir)),
       },
+    ];
+    seq.slice(1, -1).forEach((it) => {
+      const dsc = RM.sim.describeMove(it.move);
+      out.push({
+        title: dsc.title,
+        move: true, dur: 900,
+        html: () => dsc.html,
+        enter: (dir) => mini.show({ t: RM.tri(), mirrorKey: it.move.type === 'flip' ? it.move.key : null }, keys, it.phases, md(dir)),
+      });
+    });
+    out.push(
       {
         title: 'Lados correspondentes',
-        html: () => '<p>Na mesma posição, comparamos <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
+        html: () => '<p>Agora o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão nos mesmos lugares: os triângulos são <b>semelhantes</b> (caso AA).</p>' +
+          '<p>Comparamos <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
           ' e <span class="c-hl2">' + COLNAME[c2] + '</span> com ' + COLNAME[c2] + '. Em triângulos semelhantes, essas razões são iguais:</p>' +
           ml(lettersHl),
-        enter: () => mini.show({ t: RM.tri(), hl }, keys, aligned, 0),
+        enter: (dir) => mini.show({ t: RM.tri(), hl }, keys, aligned, md(dir)),
       },
       {
         title: 'A relação',
@@ -108,7 +102,8 @@
         },
         enter: () => mini.show({ t: RM.tri(), hl }, keys, aligned, 0),
       },
-    ];
+    );
+    return out;
   }
 
   /* ---------- Pitágoras com áreas (cisalhamentos de Euclides) ---------- */
@@ -306,8 +301,7 @@
       title: st.title,
       html: st.html,
       dur: st.move ? 1700 : 0,
-      // passos com movimento: "Rever movimento" volta ao estado do passo anterior e anima de novo
-      replay: st.move ? () => { Object.assign(area, AREA_STEPS[idx - 1].st); } : null,
+      move: !!st.move,
       enter: (dir, done) => {
         const jump = dir !== 1;
         areaGo(st.st, jump ? 0 : 1700 / (RM.state.speed || 1), done);
@@ -349,7 +343,7 @@
     els.count.textContent = 'Passo ' + (step + 1) + ' de ' + steps.length;
     els.title.textContent = st.title;
     els.body.innerHTML = st.html();
-    document.getElementById('ded-replay').hidden = !st.replay;
+    document.getElementById('ded-replay').hidden = !st.move;
     els.prev.disabled = step === 0;
     els.next.disabled = step === steps.length - 1;
     els.dots.innerHTML = steps.map((s, idx) =>
@@ -390,8 +384,7 @@
     if (step >= steps.length - 1) { setPlaying(false); return; }
     const st = steps[step];
     const sp = RM.state.speed || 1;
-    let wait = (st.dur || 0) / sp + 2600 / sp;
-    if (st.replay === true) wait += (mini.moves(RM.tri(), st.keys || []).length + 1) * 1050 / sp;
+    const wait = (st.dur || 0) / sp + 2600 / sp;
     playTimer = setTimeout(() => { if (playing) goTo(step + 1, true); }, wait);
   }
 
@@ -400,7 +393,6 @@
     stopAll();
     sel = id;
     step = 0;
-    liveMove = -1;
     area = Object.assign({}, AREA_ZERO);
     build();
     renderList();
@@ -426,9 +418,8 @@
       document.getElementById('ded-replay').addEventListener('click', () => {
         setPlaying(false);
         stopAll();
-        const st = steps[step];
-        if (typeof st.replay === 'function') st.replay();
-        st.enter(1);
+        if (step > 0) steps[step - 1].enter(9); // volta ao estado anterior sem animar
+        steps[step].enter(1);                   // e refaz só este movimento
       });
       els.next.addEventListener('click', () => goTo(step + 1));
       document.getElementById('ded-play').addEventListener('click', () => {
@@ -443,6 +434,8 @@
           renderList();
         }
         if (['a', 'm', 'rot', 'mirror', 'pose', 'hide', 'dec', 'font'].some((k) => changed.includes(k))) {
+          stopAll();
+          build(); // a quantidade de movimentos pode mudar com a posição
           renderText();
           steps[step].enter(9); // redesenha sem animar
         }
