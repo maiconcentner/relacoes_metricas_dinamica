@@ -153,6 +153,7 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
 .tool .slash { opacity: 0; }
 .tool[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .tool[aria-pressed="true"] .slash { opacity: 1; }
+.tool.attn { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
 .tool-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
 .seg {

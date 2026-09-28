@@ -36,10 +36,18 @@
   const TRI_NAME = { big: '△ABC', p1: '△HBA', p2: '△HAC' };
   const TRI_CLASS = { big: '', p1: 'c-p1', p2: 'c-p2' };
   const TRI_COLOR = { big: 'grande', p1: 'amarelo', p2: 'verde' };
+  /* Forma "fórmula" de cada relação: L[0]·L[1] = R[0]·R[1] */
+  const FORMF = {
+    c2: { L: ['c', 'c'], R: ['a', 'm'] },
+    b2: { L: ['b', 'b'], R: ['a', 'n'] },
+    h2: { L: ['h', 'h'], R: ['m', 'n'] },
+    ah: { L: ['a', 'h'], R: ['b', 'c'] },
+  };
   const COLNAME = { hip: 'hipotenusa', ob: 'lado oposto a β', og: 'lado oposto a γ' };
 
   /* ---------- Estado ---------- */
-  const cfg = { focus: new Set(), steps: 1, nums: 'int', randPos: false };
+  const cfg = { focus: new Set(), steps: 1, nums: 'int', randPos: false, method: 'both' };
+  let mini = null;
   let ex = null;             // { t, givens, target, path, sol: [...], cur }
   const layers = { names: false, angles: false, fill: false };
   const custom = {};         // var -> 'given' | 'target'
@@ -178,57 +186,78 @@
         const keys = [r1.key, r2.key];
         const common = keys.includes('big') ? (keys.includes('p1') ? 'o ângulo <span class="c-beta">β</span>' : 'o ângulo <span class="c-gamma">γ</span>')
           : 'os ângulos <span class="c-beta">β</span> e <span class="c-gamma">γ</span>';
-        const knownNow = new Set(known);
-        const label = (key, side) => {
-          if (side === e.target && !knownNow.has(side)) return 'x';
-          return knownNow.has(side) ? F(t[side]) : side;
-        };
+        const formula = FOCUS.find((f) => f.id === s.rel).html;
         const hl = {};
         hl[r1.key] = { [r1[c1]]: 'hl1', [r1[c2]]: 'hl2' };
         hl[r2.key] = { [r2[c1]]: 'hl1', [r2[c2]]: 'hl2' };
         const names = keys.map((k) => '<b class="' + TRI_CLASS[k] + '">' + TRI_NAME[k] + '</b>').join(' e ');
-        steps.push({
-          title: pre + 'Quais triângulos são semelhantes?',
-          html: '<p>As medidas ' + listAnd(R.vars.map((v) => sym(v))) + ' aparecem juntas nos triângulos ' + names + '.</p>' +
-            '<p>Eles são <b>semelhantes</b> (caso AA): os dois têm um ângulo reto e ' + common + '.</p>' +
-            RM.sim.pairSVG({ t, keys, label }),
-          fig: { fill: keys },
-          found: found.slice(),
-        });
-        const letters = fr(i(r1[c1]), i(r2[c1])) + ' = ' + fr(i(r1[c2]), i(r2[c2]));
-        const nums = fr('<span class="c-hl1">' + val(r1[c1]) + '</span>', '<span class="c-hl1">' + val(r2[c1]) + '</span>') + ' = ' +
-          fr('<span class="c-hl2">' + val(r1[c2]) + '</span>', '<span class="c-hl2">' + val(r2[c2]) + '</span>');
-        steps.push({
-          title: pre + 'Montando a proporção',
-          html: '<p>Na mesma posição, comparamos os lados correspondentes: <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
-            ' e <span class="c-hl2">' + COLNAME[c2] + '</span> com ' + COLNAME[c2] + '.</p>' +
-            RM.sim.pairSVG({ t, keys, label, hl }) + ml(letters) + ml(nums),
-          fig: { fill: keys, hl: R.vars.map((v) => [v, v === x ? 'hl1' : 'hl2']) },
-          found: found.slice(),
-        });
-        // multiplicação cruzada: r1[c1]·r2[c2] = r2[c1]·r1[c2]
-        const L = [r1[c1], r2[c2]], Rr = [r2[c1], r1[c2]];
-        const side = L.includes(x) ? L : Rr;
-        const other = side === L ? Rr : L;
-        const prod = t[other[0]] * t[other[1]];
-        let calc;
-        if (side[0] === x && side[1] === x) {
-          calc = ml(sym(x) + '² = ' + val(other[0]) + ' · ' + val(other[1]) + ' = ' + F(prod)) +
-            ml(sym(x) + ' = √' + F(prod) + ' = <span class="result">' + F(t[x]) + '</span>');
-        } else {
+        const before = new Set(known);
+        const after = new Set(known); after.add(x);
+        const labeler = (kn) => (key, side) => {
+          if (side === x && kn.has(x)) return { txt: (x === e.target ? 'x = ' : side + ' = ') + F(t[side]), color: 'var(--ok)' };
+          if (side === e.target) return { txt: 'x', color: 'var(--hl1)' };
+          if (kn.has(side)) return { txt: F(t[side]) };
+          return { txt: side, color: 'var(--muted)' };
+        };
+        // Conta a partir de fatores: L[0]·L[1] = R[0]·R[1]
+        const calcFrom = (L, Rr) => {
+          const side = L.includes(x) ? L : Rr;
+          const other = side === L ? Rr : L;
+          const prod = t[other[0]] * t[other[1]];
+          const otherTxt = other[0] === other[1] ? val(other[0]) + '²' : val(other[0]) + ' · ' + val(other[1]);
+          if (side[0] === x && side[1] === x) {
+            return ml(sym(x) + '² = ' + otherTxt + ' = ' + F(prod)) +
+              ml(sym(x) + ' = √' + F(prod) + ' = <span class="result">' + F(t[x]) + '</span>');
+          }
           const k = side[0] === x ? side[1] : side[0];
-          calc = ml(val(k) + ' · ' + sym(x) + ' = ' + val(other[0]) + ' · ' + val(other[1])) +
+          return ml(val(k) + ' · ' + sym(x) + ' = ' + otherTxt) +
             ml(val(k) + ' · ' + sym(x) + ' = ' + F(prod)) +
             ml(sym(x) + ' = ' + fr(F(prod), val(k)) + ' = <span class="result">' + F(t[x]) + '</span>');
+        };
+        const FF = FORMF[s.rel];
+        const calcSim = calcFrom([r1[c1], r2[c2]], [r2[c1], r1[c2]]);
+        const calcForm = calcFrom(FF.L, FF.R);
+        const fillFig = { fill: keys, hl: R.vars.map((v) => [v, v === x ? 'hl1' : 'hl2']) };
+
+        if (cfg.method !== 'formula') {
+          steps.push({
+            title: pre + 'Quais triângulos são semelhantes?',
+            html: '<p>As medidas ' + listAnd(R.vars.map((v) => sym(v))) + ' aparecem juntas nos triângulos ' + names + '.</p>' +
+              '<p>Eles são <b>semelhantes</b> (caso AA): os dois têm um ângulo reto e ' + common + '.</p>' +
+              '<p>Na figura, separamos os dois e colocamos na mesma posição, <b>um movimento de cada vez</b>.</p>',
+            mini: { keys, mode: 'align', label: labeler(before) },
+            found: found.slice(),
+          });
+          const letters = fr(i(r1[c1]), i(r2[c1])) + ' = ' + fr(i(r1[c2]), i(r2[c2]));
+          const nums = fr('<span class="c-hl1">' + val(r1[c1]) + '</span>', '<span class="c-hl1">' + val(r2[c1]) + '</span>') + ' = ' +
+            fr('<span class="c-hl2">' + val(r1[c2]) + '</span>', '<span class="c-hl2">' + val(r2[c2]) + '</span>');
+          steps.push({
+            title: pre + 'Montando a proporção',
+            html: '<p>Na mesma posição, comparamos os lados correspondentes: <span class="c-hl1">' + COLNAME[c1] + '</span> com ' + COLNAME[c1] +
+              ' e <span class="c-hl2">' + COLNAME[c2] + '</span> com ' + COLNAME[c2] + '.</p>' + ml(letters) + ml(nums),
+            mini: { keys, mode: 'aligned', hl, label: labeler(before) },
+            found: found.slice(),
+          });
+          steps.push({
+            title: pre + 'Calculando ' + (x === e.target ? 'x' : x),
+            html: '<p>Multiplicamos cruzado (como na regra de três) e isolamos ' + sym(x) + ':</p>' + calcSim,
+            mini: { keys, mode: 'aligned', hl, label: labeler(after) },
+            found: found.concat([x]),
+          });
+        }
+        if (cfg.method !== 'sim') {
+          const both = cfg.method === 'both';
+          steps.push({
+            title: pre + (both ? 'Conferindo pela fórmula' : 'Usando a fórmula'),
+            html: (both
+              ? '<p>A relação ' + formula + ' é o resumo desta semelhança. Aplicando direto:</p>'
+              : '<p>As medidas ' + listAnd(R.vars.map((v) => sym(v))) + ' estão ligadas pela relação ' + formula + '. Substituímos os valores:</p>') +
+              ml(formula) + calcForm + (both ? '<p>O mesmo resultado, por um caminho mais curto.</p>' : ''),
+            fig: both ? { hl: [[x, 'ok']] } : fillFig,
+            found: found.concat([x]),
+          });
         }
         known.add(x); found.push(x);
-        steps.push({
-          title: pre + 'Calculando ' + (x === e.target ? 'x' : x),
-          html: '<p>Multiplicamos cruzado (como na regra de três) e isolamos ' + sym(x) + ':</p>' + calc +
-            '<p class="note">Esta é a relação ' + FOCUS.find((f) => f.id === s.rel).html + '.</p>',
-          fig: { fill: keys, hl: [[x, 'ok']] },
-          found: found.slice(),
-        });
       } else if (R.kind === 'sum') {
         let calc;
         if (x === 'a') calc = ml(sym('a') + ' = ' + i('m') + ' + ' + i('n') + ' = ' + F(t.m) + ' + ' + F(t.n) + ' = <span class="result">' + F(t.a) + '</span>');
@@ -275,9 +304,14 @@
     steps.push({
       title: 'Resposta',
       html: ml('<span class="result">x = ' + SEG[e.target] + ' = ' + unit(F(t[e.target])) + '</span>') +
-        '<p>Relações usadas: ' + e.path.map((s) => {
+        '<p>Caminho: ' + e.path.map((s) => {
           const f = FOCUS.find((g) => g.rels.includes(s.rel));
-          return s.rel === 'p1' ? 'Pitágoras em △HBA' : s.rel === 'p2' ? 'Pitágoras em △HAC' : f.html;
+          if (s.rel === 'p1') return 'Pitágoras em △HBA';
+          if (s.rel === 'p2') return 'Pitágoras em △HAC';
+          if (RELS[s.rel].kind !== 'sim') return f.html;
+          const rel = RM.sim.REL[s.rel];
+          const sim = '△' + rel.rows[0] + ' ~ △' + rel.rows[1];
+          return cfg.method === 'formula' ? f.html : cfg.method === 'sim' ? sim : sim + ' (' + f.html + ')';
         }).join(' → ') + '.</p>',
       fig: { hl: [[e.target, 'ok']] },
       found: found.slice(),
@@ -307,7 +341,24 @@
     return P;
   }
 
-  function render() {
+  /* Passos de semelhança usam a mini-animação; os outros, a figura do exercício. */
+  function render() { showStep(0); }
+  function showStep(dir) {
+    if (!ex) { if (mini) mini.stop(); els.svg.innerHTML = ''; return; }
+    const st = ex.sol[ex.cur];
+    if (!st || !st.mini) { if (mini) mini.stop(); renderFig(); return; }
+    const o = { t: ex.t, hl: st.mini.hl, label: st.mini.label };
+    const inplace = {}, aligned = {};
+    st.mini.keys.forEach((k) => { inplace[k] = 'inplace'; aligned[k] = 'rot'; });
+    if (st.mini.mode === 'align' && dir === 1) {
+      mini.show(Object.assign({}, o, { ghost: true }), st.mini.keys, inplace, 0);
+      mini.align(o, st.mini.keys);
+    } else {
+      mini.show(o, st.mini.keys, aligned, 0);
+    }
+  }
+
+  function renderFig() {
     if (!ex) { els.svg.innerHTML = ''; return; }
     const t = ex.t;
     const P = figTransform(t);
@@ -408,6 +459,7 @@
     els.steps.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(cfg.steps) === b.dataset.v));
     els.nums.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', cfg.nums === b.dataset.v));
     els.randPos.checked = cfg.randPos;
+    document.querySelectorAll('#ex-method button').forEach((b) => b.setAttribute('aria-pressed', cfg.method === b.dataset.v));
     document.querySelectorAll('[data-exlayer]').forEach((b) => b.setAttribute('aria-pressed', layers[b.dataset.exlayer]));
     els.custom.querySelectorAll('[data-cv]').forEach((b) => {
       const v = b.dataset.cv, role = b.dataset.role;
@@ -482,9 +534,10 @@
 
   function go(delta) {
     if (!ex) return;
+    const before = ex.cur;
     ex.cur = RM.clamp(ex.cur + delta, 0, ex.sol.length - 1);
-    render();
     renderSide();
+    showStep(ex.cur - before);
   }
 
   RM.exe = {
@@ -506,6 +559,14 @@
         prev: document.getElementById('ex-prev'),
         next: document.getElementById('ex-next'),
       };
+      mini = RM.sim.createMini(els.svg);
+      document.getElementById('ex-method').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-v]');
+        if (!b) return;
+        cfg.method = b.dataset.v;
+        if (ex) load({ t: ex.t, givens: ex.givens, target: ex.target, path: ex.path });
+        else renderSide();
+      });
       els.focus.innerHTML = FOCUS.map((f) => '<button class="chip chip-math" data-focus="' + f.id + '">' + f.html + '</button>').join('');
       els.focus.addEventListener('click', (e) => {
         const b = e.target.closest('[data-focus]');
@@ -547,7 +608,7 @@
       document.getElementById('ex-restart').addEventListener('click', () => { if (ex) go(-ex.sol.length); });
       els.dots.addEventListener('click', (e) => {
         const d = e.target.closest('[data-exstep]');
-        if (d && ex) { ex.cur = Number(d.dataset.exstep); render(); renderSide(); }
+        if (d && ex) { const n = Number(d.dataset.exstep); go(n - ex.cur); }
       });
       document.getElementById('ex-copy').addEventListener('click', () => {
         if (!ex) return;

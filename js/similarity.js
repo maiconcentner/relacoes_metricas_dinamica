@@ -851,13 +851,20 @@
           seenS.add(side);
           const [p, q] = pc.sides[side];
           const third = pc.names.find((n) => n !== p && n !== q);
-          const color = hl[side] ? 'var(--' + hl[side] + ')' : null;
+          let txt = side;
+          let color = hl[side] ? 'var(--' + hl[side] + ')' : null;
+          if (opts.label) {
+            const l = opts.label(key, side);
+            if (!l) return;
+            txt = l.txt;
+            if (l.color && !color) color = l.color;
+          }
           if (dedupe && key === 'big' && side === 'a' && shown.length > 1) {
             // m e n ficam junto à hipotenusa; a vai numa cota afastada
-            out += D.dimension(v.B, v.C, v.A, 54, (pos) => stext(pos, 'a', fs, color), 'var(--muted)', fs);
+            out += D.dimension(v.B, v.C, v.A, 54, (pos) => stext(pos, D.esc(txt), fs, color), 'var(--muted)', fs);
             return;
           }
-          out += stext(D.sideLabelPos(v[p], v[q], v[third], D.fs(20)), side, fs, color);
+          out += stext(D.sideLabelPos(v[p], v[q], v[third], D.fs(20)), D.esc(txt), fs, color);
         });
         out += '</g>';
       });
@@ -908,6 +915,7 @@
         nextStep();
       },
       redraw() { draw(); },
+      stop() { token++; if (anim) { anim.cancel(); anim = null; } },
       moves(t, keys) { return alignSequence(t, keys).map((x) => x.move).filter(Boolean); },
     };
   }

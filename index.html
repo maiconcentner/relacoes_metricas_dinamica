@@ -42,6 +42,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 20 20 4" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Ocultar valores</span>
       </button>
+      <button class="tool" id="btn-reset-pos" title="Voltar a figura à posição padrão (tecla 0)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16h8l-8-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Posição padrão</span>
+      </button>
       <button class="tool" id="btn-full" title="Tela cheia (tecla F)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Tela cheia</span>
@@ -75,10 +79,6 @@
           <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
             <span>Sortear posição</span>
-          </button>
-          <button class="fb" data-act="reset" title="Voltar à posição padrão" aria-label="Voltar à posição padrão">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20 12 8l6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            <span>Padrão</span>
           </button>
         </div>
       </div>
@@ -132,10 +132,6 @@
           <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
             <span>Sortear posição</span>
-          </button>
-          <button class="fb" data-act="reset" title="Voltar à posição padrão" aria-label="Voltar à posição padrão">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20 12 8l6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            <span>Padrão</span>
           </button>
         </div>
         <div class="fb-group">
@@ -226,10 +222,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
             <span>Sortear posição</span>
           </button>
-          <button class="fb" data-act="reset" title="Voltar à posição padrão" aria-label="Voltar à posição padrão">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20 12 8l6 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            <span>Padrão</span>
-          </button>
         </div>
       </div>
       <div class="layerbar" role="group" aria-label="Mostrar na figura do exercício">
@@ -273,6 +265,10 @@
         <div class="field-inline">
           <span class="flabel">Números</span>
           <div class="seg seg-sm" id="ex-nums"><button data-v="int">Inteiros</button><button data-v="dec">Decimais</button></div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Resolver por</span>
+          <div class="seg seg-sm" id="ex-method"><button data-v="sim">Semelhança</button><button data-v="formula">Fórmula</button><button data-v="both">As duas</button></div>
         </div>
         <label class="switch"><input type="checkbox" id="ex-randpos"><span>Figura em posição aleatória</span></label>
         <button class="btn" id="ex-generate">Gerar exercício</button>
@@ -417,6 +413,7 @@
           <dt><kbd>G</kbd> <kbd>⇧G</kbd></dt><dd>Girar a figura 15° (com Shift, no outro sentido)</dd>
           <dt><kbd>E</kbd></dt><dd>Espelhar a figura</dd>
           <dt><kbd>R</kbd></dt><dd>Sortear uma posição</dd>
+          <dt><kbd>0</kbd></dt><dd>Voltar a figura à posição padrão</dd>
           <dt><kbd>F</kbd></dt><dd>Tela cheia</dd>
           <dt><kbd>P</kbd></dt><dd>Abrir ou fechar este painel</dd>
         </dl>

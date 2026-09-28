@@ -30,6 +30,7 @@
     $('lvl-ef').setAttribute('aria-pressed', s.level === 'ef');
     $('lvl-em').setAttribute('aria-pressed', s.level === 'em');
     $('btn-hide').setAttribute('aria-pressed', s.hide);
+    $('btn-reset-pos').classList.toggle('attn', s.rot !== 0 || s.mirror);
     $('btn-hide').querySelector('span').textContent = s.hide ? 'Mostrar valores' : 'Ocultar valores';
 
     // Painel
@@ -232,6 +233,7 @@
       case 'g': figAction(e.shiftKey ? 'rotR' : 'rotL'); break;
       case 'e': figAction('mirror'); break;
       case 'r': figAction('random'); break;
+      case '0': figAction('reset'); break;
       case 'p': openPanel($('panel').hidden); break;
       default: return;
     }
@@ -251,6 +253,7 @@
     document.querySelectorAll('[data-level]').forEach((b) => b.addEventListener('click', () => RM.set({ level: b.dataset.level })));
     $('btn-hide').addEventListener('click', () => RM.set({ hide: !RM.state.hide }));
     $('btn-full').addEventListener('click', toggleFullscreen);
+    $('btn-reset-pos').addEventListener('click', () => figAction('reset'));
     bindPanel();
     document.addEventListener('keydown', onKey);
     window.addEventListener('hashchange', () => {

@@ -31,14 +31,16 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 ### Exercícios (primeira parte da Fase 3)
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
 - **Montar o meu**: marque quais medidas são dados e qual é pedida; o solucionador diz se dá para resolver.
+- **Resolver por**: Semelhança, Fórmula ou As duas (padrão: primeiro a semelhança, depois a conferência pela fórmula).
 - A figura começa só com os dados e o **x**. O solucionador avança um passo por clique (setas ou passador de slides):
-  - quais triângulos são semelhantes (colore os dois e mostra os dois lado a lado, na mesma posição);
+  - quais triângulos são semelhantes: a própria figura separa os dois e os alinha, um movimento de cada vez, com os dados e o x nos lados;
   - a proporção, com os lados correspondentes destacados;
   - a conta (multiplicação cruzada) e o valor encontrado, que aparece na figura.
 - Botão para copiar o enunciado.
 
 ### Posição da figura
-- Barra acima de cada figura para **girar** (15° por clique), **espelhar**, deixar **em pé**, **sortear uma posição** qualquer ou voltar ao **padrão**.
+- Barra acima de cada figura para **girar** (15° por clique), **espelhar**, deixar **em pé** ou **sortear uma posição** qualquer.
+- O botão **Posição padrão** fica fixo na barra de cima, em todas as abas (tecla `0`), e se destaca quando a figura está girada ou espelhada.
 - No Laboratório, arrastar em qualquer ponto fora dos vértices gira a figura livremente. As medidas e as relações continuam valendo em qualquer posição.
 - Na Semelhança, a figura original aparece na posição escolhida, e o botão **Comparar** define como os triângulos são alinhados:
   - **Amarelo fixo** (padrão): o amarelo fica parado e serve de referência; o grande é espelhado e girado, e o verde só é girado.
@@ -66,6 +68,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 | `G` / `Shift+G` | girar a figura 15° |
 | `E` | espelhar a figura |
 | `R` | sortear uma posição |
+| `0` | voltar à posição padrão |
 | `F` | tela cheia |
 | `P` | painel do professor |
 
