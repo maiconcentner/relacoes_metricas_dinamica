@@ -5,6 +5,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 ## O que já existe (Fase 1)
 
 ### Laboratório
+- Começa "cru", só com o triângulo. A barra **Mostrar** liga e desliga altura, nomes, valores, ângulos, cores, semicírculo e malha (ou **Tudo** / **Só o triângulo**).
+- O olho de cada medida escolhe quais valores aparecem na figura.
 - Arraste o vértice **A** sobre o semicírculo (o ângulo em A continua reto) ou o vértice **C** para mudar a hipotenusa.
 - Medidas `a, b, c, h, m, n, β, γ` atualizadas ao vivo.
 - Todas as relações conferidas com números em tempo real. Tocar em uma relação destaca na figura os segmentos envolvidos:
@@ -15,7 +17,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 1. O triângulo retângulo; ângulos agudos (β + γ = 90°).
 2. Altura relativa à hipotenusa, projeções `m` e `n`.
 3. Descoberta dos ângulos nos triângulos menores.
-4. Os triângulos menores são **separados**, **refletidos** e **girados** até a mesma posição do triângulo grande.
+4. Os triângulos são **separados** e levados à mesma posição **um movimento por passo** (espelhar o grande, girar o grande, girar o verde...), com o ângulo e o sentido de cada giro.
 5. Caso AA: `△ABC ~ △HBA ~ △HAC`.
 6. Os três **encaixados** pelo ângulo β, mostrando os lados paralelos.
 7. Tabela de lados correspondentes e dedução de cada relação, com os lados destacados na figura e na tabela.

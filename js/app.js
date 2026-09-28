@@ -48,6 +48,9 @@
     segSync('seg-speed', String(s.speed));
     $('ck-hide').checked = s.hide;
     $('ck-values').checked = s.values;
+    $('ck-alt').checked = s.alt;
+    $('ck-names').checked = s.names;
+    document.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', !!s[b.dataset.layer]));
     $('ck-angles').checked = s.angles;
     $('ck-fill').checked = s.fill;
     $('ck-arc').checked = s.arc;
@@ -126,12 +129,23 @@
     segBind('seg-theme', (v) => RM.set({ theme: v }));
     segBind('seg-speed', (v) => RM.set({ speed: Number(v) }));
 
-    [['ck-hide', 'hide'], ['ck-values', 'values'], ['ck-angles', 'angles'], ['ck-fill', 'fill'], ['ck-arc', 'arc'], ['ck-grid', 'grid']]
+    [['ck-hide', 'hide'], ['ck-alt', 'alt'], ['ck-names', 'names'], ['ck-values', 'values'], ['ck-angles', 'angles'], ['ck-fill', 'fill'], ['ck-arc', 'arc'], ['ck-grid', 'grid']]
       .forEach(([id, key]) => $(id).addEventListener('change', (e) => RM.set({ [key]: e.target.checked })));
     $('rg-font').addEventListener('input', (e) => RM.set({ font: Number(e.target.value) }));
     $('rg-rot').addEventListener('input', (e) => RM.set({ rot: Number(e.target.value) }));
     $('ck-mirror').addEventListener('change', (e) => RM.set({ mirror: e.target.checked }));
     segBind('seg-pose', (v) => RM.set({ pose: v }));
+    document.querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.layer;
+      RM.set({ [k]: !RM.state[k] });
+    }));
+    document.querySelectorAll('[data-layers]').forEach((b) => b.addEventListener('click', () => {
+      const on = b.dataset.layers === 'all';
+      const patch = {};
+      Object.keys(RM.LAYERS).forEach((k) => { patch[k] = on && k !== 'grid' && k !== 'arc' ? true : on && false; });
+      if (on) patch.shown = 'abchmn';
+      RM.set(patch);
+    }));
     document.querySelectorAll('[data-pose]').forEach((b) => b.addEventListener('click', () => RM.set({ pose: b.dataset.pose })));
     document.querySelectorAll('.fb[data-act]').forEach((b) => b.addEventListener('click', () => figAction(b.dataset.act)));
 

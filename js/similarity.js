@@ -114,7 +114,7 @@
         const base = { rot: fc.rot, ax: 0, flip: fc.flip };
         const d = normRad(o.rot - fc.rot);
         const fin = { rot: fc.rot + d, ax: 0, flip: fc.flip };
-        out[key] = { split: base, flip: base, rot: fin, final: fin, reflects: false, rotates: Math.abs(d) > 1e-3 };
+        out[key] = { split: base, flip: base, rot: fin, final: fin, reflects: false, rotates: Math.abs(d) > 1e-3, turn: d };
       } else {
         // Espelho vertical (β = 90°) ou horizontal (β = 0°): o que deixar o giro seguinte menor.
         // Depois da reflexão na reta de ângulo β, a parte de rotação vira 2β − θ.
@@ -130,7 +130,7 @@
           : { rot: 2 * beta - a0, ax: a0 - beta, flip: -1 };
         const after = Object.assign({}, split, { flip: -split.flip });
         const fin = Object.assign({}, after, { rot: after.rot + best.d });
-        out[key] = { split, flip: after, rot: fin, final: fin, reflects: true, rotates: Math.abs(best.d) > 1e-3 };
+        out[key] = { split, flip: after, rot: fin, final: fin, reflects: true, rotates: Math.abs(best.d) > 1e-3, turn: best.d, axis: beta };
       }
     });
     return out;
@@ -189,7 +189,14 @@
   }
 
   /* ---------- Layout de cada fase ---------- */
-  function layout(kind, t, P) {
+  /* Fase de cada peça na montagem, conforme os movimentos já feitos (done). */
+  function phaseOf(key, done) {
+    if (done === 'all' || done.includes('rot:' + key)) return 'rot';
+    if (done.includes('flip:' + key)) return 'flip';
+    return 'split';
+  }
+
+  function layout(kind, t, P, step) {
     const C = phaseConfs(P);
     const keys = ['big', 'p1', 'p2'];
     const S = {};
@@ -205,7 +212,8 @@
       return S;
     }
 
-    if (kind === 'split' || kind === 'flip' || kind === 'rot') {
+    if (kind === 'asm') {
+      const done = step.done || [];
       // Tamanho máximo de cada peça nas três fases, para nada sair da tela durante a animação
       const D0 = {};
       keys.forEach((key) => {
@@ -215,12 +223,13 @@
       const gapX = 90, gapY = 82;
       const hRow = Math.max(D0.p1.h, D0.p2.h);
       const k = Math.min(900 / D0.big.w, (880 - gapX) / (D0.p1.w + D0.p2.w), (500 - gapY) / (D0.big.h + hRow));
-      S.big = placeCenter(P.big, withS(C.big[kind], k), W / 2, 34 + (D0.big.h * k) / 2);
+      const ph = (key) => C[key][phaseOf(key, done)];
+      S.big = placeCenter(P.big, withS(ph('big'), k), W / 2, 34 + (D0.big.h * k) / 2);
       // Os menores ficam apoiados na mesma linha
       const bottom = 34 + D0.big.h * k + gapY + hRow * k;
       const start = (W - (D0.p1.w + D0.p2.w) * k - gapX) / 2;
-      S.p1 = placeBottom(P.p1, withS(C.p1[kind], k), start + (D0.p1.w * k) / 2, bottom);
-      S.p2 = placeBottom(P.p2, withS(C.p2[kind], k), start + D0.p1.w * k + gapX + (D0.p2.w * k) / 2, bottom);
+      S.p1 = placeBottom(P.p1, withS(ph('p1'), k), start + (D0.p1.w * k) / 2, bottom);
+      S.p2 = placeBottom(P.p2, withS(ph('p2'), k), start + D0.p1.w * k + gapX + (D0.p2.w * k) / 2, bottom);
       return S;
     }
 
@@ -298,7 +307,55 @@
     ah: { rows: ['ABC', 'HBA'], cols: ['hip', 'ob'] },
   };
 
-  const STEPS = [
+  const MOVES_MARK = { marker: true };
+  const SHORT = { big: 'o triângulo grande', p1: 'o amarelo', p2: 'o verde' };
+
+  /* Um passo para cada movimento: primeiro termina um triângulo, depois o outro. */
+  function moveSteps() {
+    const C = phaseConfs(pieces(RM.tri()));
+    const list = [];
+    ['big', 'p1', 'p2'].forEach((key) => {
+      if (C[key].reflects) list.push({ type: 'flip', key });
+      if (C[key].rotates) list.push({ type: 'rot', key });
+    });
+    const done = [];
+    return list.map((mv, idx) => {
+      done.push(mv.type + ':' + mv.key);
+      const first = idx === 0, last = idx === list.length - 1;
+      const step = {
+        title: (mv.type === 'flip' ? 'Espelhando ' : 'Girando ') + SHORT[mv.key],
+        layout: 'asm', done: done.slice(), active: mv.type + ':' + mv.key,
+        pieces: 1, angles: 3, labels: 'piece',
+        text: (t, lv) => moveText(mv, first, last, lv),
+      };
+      return step;
+    });
+  }
+
+  function moveText(mv, first, last, lv) {
+    const C = phaseConfs(pieces(RM.tri()));
+    const c = C[mv.key];
+    let html = first ? '<p>Para comparar, vamos colocar os três na mesma posição: ' + poseName() + '. Um movimento de cada vez.</p>' : '';
+    if (mv.type === 'flip') {
+      const vertical = Math.abs(Math.cos(c.axis)) < 0.5;
+      html += lv === 'em'
+        ? '<p>Aplicamos em ' + PIECE_NAME[mv.key] + ' uma <b>reflexão</b> na reta ' + (vertical ? 'vertical' : 'horizontal') + ' tracejada. Reflexões preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
+        : '<p><b>Espelhamos</b> ' + PIECE_NAME[mv.key] + ' na linha tracejada ' + (vertical ? '(em pé): o que estava à esquerda passa para a direita.' : '(deitada): ele fica de cabeça para baixo.') + '</p><p>Espelhar não muda o tamanho nem os ângulos.</p>';
+    } else {
+      const deg = Math.round(Math.abs(c.turn) * 180 / Math.PI);
+      const dir = c.turn > 0 ? 'anti-horário' : 'horário';
+      html += '<p><b>Giramos</b> ' + PIECE_NAME[mv.key] + ' ' + deg + '° no sentido ' + dir + ', em torno do seu centro, até ficar na mesma posição ' +
+        (RM.state.pose === 'fixo' ? 'do <span class="c-p1">amarelo</span>' : 'escolhida') + '.</p>';
+    }
+    if (last) {
+      const mv2 = moves();
+      if (mv2.still.length) html += '<p>' + cap(listNames(mv2.still)) + (mv2.still.length > 1 ? ' ficaram parados' : ' ficou parado') + (RM.state.pose === 'fixo' ? ' o tempo todo: ele é a referência.' : '.') + '</p>';
+      html += '<p>Pronto: o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão no mesmo lugar nos três.</p>';
+    }
+    return html;
+  }
+
+  const STEP_TEMPLATE = [
     { title: 'O triângulo retângulo', layout: 'whole', pieces: 0, angles: 0, labels: 'fig',
       text: (t, lv) => lv === 'em'
         ? '<p>Seja <b>ABC</b> um triângulo retângulo em <b>A</b>. Chamamos ' + i('a') + ' = BC de hipotenusa e ' + i('b') + ' = AC, ' + i('c') + ' = AB de catetos.</p>'
@@ -319,39 +376,12 @@
         : '<p>No triângulo <span class="c-p1">amarelo</span> já conhecemos dois ângulos: <span class="c-beta">β</span> em B e 90' + deg + ' em H. O ângulo em A completa 180' + deg + ', então ele é <span class="c-gamma">γ</span>.</p>' +
           ml('90' + deg + ' + <span class="c-beta">β</span> + ? = 180' + deg + ' &nbsp;⇒&nbsp; ? = <span class="c-gamma">γ</span>') +
           '<p>No <span class="c-p2">verde</span> acontece o mesmo: <span class="c-gamma">γ</span> em C, 90' + deg + ' em H, e o ângulo em A é <span class="c-beta">β</span>.</p>' },
-    { title: 'Separando os triângulos', layout: 'split', pieces: 1, angles: 3, labels: 'piece',
+    { title: 'Separando os triângulos', layout: 'asm', done: [], pieces: 1, angles: 3, labels: 'piece',
       text: (t, lv) => lv === 'em'
         ? '<p>Destacamos △ABC, △HBA e △HAC. Os três têm ângulos <span class="c-beta">β</span>, <span class="c-gamma">γ</span> e 90' + deg + ', mas estão em posições diferentes.</p>'
         : '<p>Agora temos <b>três triângulos</b>: o grande ABC e os dois menores. Vamos separá-los para comparar.</p><p>Repare nas cores dos ângulos: todos têm um <span class="c-beta">β</span>, um <span class="c-gamma">γ</span> e um ângulo reto.</p>' },
-    { title: 'Refletindo (espelhando)', layout: 'flip', pieces: 1, angles: 3, labels: 'piece', mirror: true,
-      text: (t, lv) => {
-        const mv = moves();
-        let html = '<p>Para comparar, vamos colocar os três na mesma posição: ' + poseName() + '.</p>';
-        if (!mv.reflect.length) return html + '<p>Nenhum triângulo precisa ser espelhado nesta posição.</p>';
-        html += lv === 'em'
-          ? '<p>' + cap(listNames(mv.reflect)) + (mv.reflect.length > 1 ? ' têm' : ' tem') + ' orientação invertida: aplicamos uma <b>reflexão</b> na reta tracejada. Reflexões são isometrias: preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
-          : '<p><b>Espelhamos</b> ' + listNames(mv.reflect) + ' na linha tracejada, como se ' + (mv.reflect.length > 1 ? 'virássemos cada um' : 'o virássemos') + ' do avesso. Espelhar não muda o tamanho nem os ângulos.</p>';
-        if (!mv.rotate.length) html += '<p>Só com isso ' + (mv.reflect.length > 1 ? 'eles já ficam' : 'ele já fica') + ' na posição certa.</p>';
-        return html;
-      } },
-    { title: 'Girando', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
-      text: (t, lv) => {
-        const mv = moves();
-        let html = '';
-        if (mv.rotate.length) {
-          html += lv === 'em'
-            ? '<p>Uma <b>rotação</b> (outra isometria) leva ' + listNames(mv.rotate) + ' à mesma posição.</p>'
-            : '<p>Agora <b>giramos</b> ' + listNames(mv.rotate) + ' até ficar na mesma posição dos outros.</p>';
-        } else {
-          html += '<p>Nenhum triângulo precisa girar nesta posição.</p>';
-        }
-        if (mv.still.length) html += '<p>' + cap(listNames(mv.still)) + (mv.still.length > 1 ? ' ficam parados' : ' fica parado') + (RM.state.pose === 'fixo' ? ': ele é a referência.' : '.') + '</p>';
-        html += '<p>Agora ' +
-          (RM.state.pose === 'base' ? 'a hipotenusa está deitada nos três, com <span class="c-beta">β</span> à esquerda e <span class="c-gamma">γ</span> à direita.'
-            : 'o ângulo reto, <span class="c-beta">β</span> e <span class="c-gamma">γ</span> estão no mesmo lugar nos três.') + '</p>';
-        return html;
-      } },
-    { title: 'Mesma forma, tamanhos diferentes', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
+    MOVES_MARK,
+    { title: 'Mesma forma, tamanhos diferentes', layout: 'asm', done: 'all', pieces: 1, angles: 3, labels: 'piece',
       text: (t, lv) => (lv === 'em'
         ? '<p>Pelo caso <b>AA</b> (ângulo-ângulo):</p>'
         : '<p>Agora os três estão na mesma posição. Têm os <b>mesmos ângulos</b> (<span class="c-beta">β</span>, <span class="c-gamma">γ</span> e 90' + deg + '), só mudam de tamanho.</p><p>Triângulos assim são <b>semelhantes</b>. Basta ter dois ângulos iguais para garantir isso: é o caso <b>AA</b>.</p>') +
@@ -407,6 +437,13 @@
         numCheck(t, RM.fmt(t.b) + '² + ' + RM.fmt(t.c) + '²', t.b * t.b + t.c * t.c, RM.fmt(t.a) + '²', t.a * t.a) },
   ];
 
+  let STEPS = [];
+  function buildSteps() {
+    const out = [];
+    STEP_TEMPLATE.forEach((st) => { if (st === MOVES_MARK) out.push(...moveSteps()); else out.push(st); });
+    STEPS = out;
+  }
+
   /* Destaques de lados por peça: { big: { a: 'hl1' } } */
   function highlights(step) {
     const out = { big: {}, p1: {}, p2: {} };
@@ -452,10 +489,9 @@
     });
 
     // Espelho (passo de reflexão)
-    if (step.mirror) {
-      const C = phaseConfs(P);
+    if (step.active && step.active.startsWith('flip:')) {
       ['big', 'p1', 'p2'].forEach((key) => {
-        if (!C[key].reflects) return;
+        if (step.active !== 'flip:' + key) return;
         const b = bbox(V[key]);
         const half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 26;
         const ang = cur[key].rot + (cur[key].ax || 0);
@@ -481,7 +517,7 @@
     }
 
     // Ângulos e ângulos retos
-    if (st.angles) out += angleMarks(step, P, V, fs);
+    out += angleMarks(step, P, V, fs);
     out += rightMarks(step, P, V);
 
     // Rótulos
@@ -677,7 +713,7 @@
   function targetStates(stepIdx) {
     const step = STEPS[stepIdx];
     const t = RM.tri();
-    const S = layout(step.layout, t, pieces(t));
+    const S = layout(step.layout, t, pieces(t), step);
     if (!step.pieces) { S.p1.op = 0; S.p2.op = 0; }
     return S;
   }
@@ -723,8 +759,13 @@
     playTimer = setTimeout(() => { if (playing) go(1); }, 3800 / (RM.state.speed || 1));
   }
 
+  function buildDots() {
+    dotsEl.innerHTML = STEPS.map((s, idx) =>
+      '<button class="dot" role="tab" data-step="' + idx + '" aria-label="Passo ' + (idx + 1) + ': ' + s.title + '" title="' + (idx + 1) + '. ' + s.title + '"></button>').join('');
+  }
+
   RM.sim = {
-    STEPS,
+    get STEPS() { return STEPS; },
     init() {
       svg = document.getElementById('sem-svg');
       titleEl = document.getElementById('step-title');
@@ -737,8 +778,8 @@
       nextBtn = document.getElementById('step-next');
       playBtn = document.getElementById('step-play');
 
-      dotsEl.innerHTML = STEPS.map((s, idx) =>
-        '<button class="dot" role="tab" data-step="' + idx + '" aria-label="Passo ' + (idx + 1) + ': ' + s.title + '" title="' + (idx + 1) + '. ' + s.title + '"></button>').join('');
+      buildSteps();
+      buildDots();
       dotsEl.addEventListener('click', (e) => {
         const d = e.target.closest('[data-step]');
         if (d) { setPlaying(false); RM.set({ step: Number(d.getAttribute('data-step')) }); }
@@ -750,6 +791,12 @@
       if (RM.state.step >= STEPS.length) RM.state.step = STEPS.length - 1;
 
       RM.on((changed) => {
+        if (['rot', 'mirror', 'pose', 'a', 'm'].some((k) => changed.includes(k))) {
+          const titles = STEPS.map((x) => x.title).join('|');
+          buildSteps();
+          if (titles !== STEPS.map((x) => x.title).join('|')) buildDots();
+          if (RM.state.step >= STEPS.length) { RM.set({ step: STEPS.length - 1 }); }
+        }
         if (changed.includes('step')) {
           if (RM.state.step >= STEPS.length) { RM.set({ step: STEPS.length - 1 }); return; }
           animateTo(RM.state.step, duration());

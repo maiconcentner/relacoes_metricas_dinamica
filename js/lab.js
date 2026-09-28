@@ -99,17 +99,20 @@
     return RM.withUnit(val, power);
   }
 
-  /* Rótulo de lado: "c = 15", "c" ou "c = ?" (clicável). */
+  /* Rótulo de lado conforme as camadas: "c = 15", "15", "c", "c = ?" (clicável) ou nada. */
   function sideLabel(key, pos, t, color) {
     const fs = D.fs(28);
     const st = RM.state;
+    const showName = st.names || !!color;
+    const showVal = st.values && st.shown.includes(key);
+    if (!showName && !showVal) return '';
     let str = key;
     let cls = 'slabel';
     let extra = '';
-    if (st.values) {
+    if (showVal) {
       const v = valueText(key, RM.fmt(t[key]));
-      if (v == null) { str = key + ' = ?'; cls += ' clickable'; extra = ' data-reveal="' + key + '"'; }
-      else str = key + ' = ' + v;
+      if (v == null) { str = showName ? key + ' = ?' : '?'; cls += ' clickable'; extra = ' data-reveal="' + key + '"'; }
+      else str = showName ? key + ' = ' + v : v;
     }
     return D.text(pos, D.esc(str), 'class="' + cls + '" font-size="' + fs + '"' + extra + (color ? ' style="fill:' + color + '"' : ''));
   }
@@ -125,6 +128,8 @@
       hl.lhs.forEach((s) => { hlColor[s] = 'var(--hl1)'; });
       hl.rhs.forEach((s) => { if (!hlColor[s]) hlColor[s] = 'var(--hl2)'; });
     }
+    const usesAlt = hl && hl.lhs.concat(hl.rhs).some((x) => 'hmn'.includes(x));
+    const showAlt = st.alt || st.fill || usesAlt;
     let out = '';
 
     if (st.grid) {
@@ -146,7 +151,7 @@
     }
 
     // Triângulos
-    if (st.fill) {
+    if (st.fill && showAlt) {
       out += D.poly([P.B, P.H, P.A], 'style="fill:var(--p1-fill);stroke:none"');
       out += D.poly([P.H, P.C, P.A], 'style="fill:var(--p2-fill);stroke:none"');
     } else {
@@ -158,22 +163,26 @@
       const fs = D.fs(26);
       out += D.angleArc(P.B, P.C, P.A, 48, 'var(--beta)', 'β', fs);
       out += D.angleArc(P.C, P.A, P.B, 48, 'var(--gamma)', 'γ', fs);
-      out += D.angleArc(P.A, P.B, P.H, 36, 'var(--gamma)', null, fs);
-      out += D.angleArc(P.A, P.H, P.C, 44, 'var(--beta)', null, fs);
+      if (showAlt) {
+        out += D.angleArc(P.A, P.B, P.H, 36, 'var(--gamma)', null, fs);
+        out += D.angleArc(P.A, P.H, P.C, 44, 'var(--beta)', null, fs);
+      }
     }
     out += D.rightMark(P.A, P.B, P.C, 16, 'var(--ink)');
-    out += D.rightMark(P.H, P.C, P.A, 13, 'var(--ink)');
+    if (showAlt) out += D.rightMark(P.H, P.C, P.A, 13, 'var(--ink)');
 
     // Lados
     out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:3;stroke-linejoin:round"');
-    out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
-    out += '<circle cx="' + P.H[0] + '" cy="' + P.H[1] + '" r="4" style="fill:var(--ink)"/>';
+    if (showAlt) {
+      out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+      out += '<circle cx="' + P.H[0] + '" cy="' + P.H[1] + '" r="4" style="fill:var(--ink)"/>';
+    }
 
     // Destaque da relação escolhida
     Object.keys(hlColor).forEach((s) => {
       const seg = SEG[s];
       let p = P[seg[0]], q = P[seg[1]];
-      if (s === 'a') [p, q] = D.offsetSeg(P.B, P.C, P.A, 58);
+      if (s === 'a' && showAlt) [p, q] = D.offsetSeg(P.B, P.C, P.A, 58);
       out += D.line(p, q, 'style="stroke:' + hlColor[s] + ';stroke-width:8;stroke-linecap:round;opacity:.85"');
     });
 
@@ -181,11 +190,18 @@
     const off = D.fs(26);
     out += sideLabel('c', D.sideLabelPos(P.A, P.B, P.C, off), t, hlColor.c);
     out += sideLabel('b', D.sideLabelPos(P.A, P.C, P.B, off), t, hlColor.b);
-    out += sideLabel('h', D.sideLabelPos(P.A, P.H, P.B, off * 1.1), t, hlColor.h);
-    out += sideLabel('m', D.sideLabelPos(P.B, P.H, P.A, D.fs(24)), t, hlColor.m);
-    out += sideLabel('n', D.sideLabelPos(P.H, P.C, P.A, D.fs(24)), t, hlColor.n);
-    out += D.dimension(P.B, P.C, P.A, 58, (pos) => sideLabel('a', pos, t, hlColor.a),
-      hlColor.a || 'var(--muted)', D.fs(28));
+    if (showAlt) {
+      out += sideLabel('h', D.sideLabelPos(P.A, P.H, P.B, off * 1.1), t, hlColor.h);
+      out += sideLabel('m', D.sideLabelPos(P.B, P.H, P.A, D.fs(24)), t, hlColor.m);
+      out += sideLabel('n', D.sideLabelPos(P.H, P.C, P.A, D.fs(24)), t, hlColor.n);
+    }
+    if (showAlt) {
+      // com m e n junto à hipotenusa, o a vai numa cota afastada
+      const la = sideLabel('a', [0, 0], t, hlColor.a);
+      if (la) out += D.dimension(P.B, P.C, P.A, 58, (pos) => sideLabel('a', pos, t, hlColor.a), hlColor.a || 'var(--muted)', D.fs(28));
+    } else {
+      out += sideLabel('a', D.sideLabelPos(P.B, P.C, P.A, off), t, hlColor.a);
+    }
 
     // Vértices
     const G = [(P.A[0] + P.B[0] + P.C[0]) / 3, (P.A[1] + P.B[1] + P.C[1]) / 3];
@@ -193,7 +209,7 @@
     out += D.text(D.vertexLabelPos(P.A, G, 30), 'A', 'class="vlabel" font-size="' + vfs + '"');
     out += D.text(D.vertexLabelPos(P.B, G, 28), 'B', 'class="vlabel" font-size="' + vfs + '"');
     out += D.text(D.vertexLabelPos(P.C, G, 28), 'C', 'class="vlabel" font-size="' + vfs + '"');
-    out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(14)), 'H', 'class="vlabel" font-size="' + D.fs(22) + '" style="fill:var(--muted)"');
+    if (showAlt) out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(14)), 'H', 'class="vlabel" font-size="' + D.fs(22) + '" style="fill:var(--muted)"');
 
     // Indicador de posição
     const st2 = RM.state;
@@ -218,12 +234,18 @@
   }
 
   /* ---------- Painel lateral ---------- */
+  const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 20 20 4" stroke="currentColor" stroke-width="1.8"/></svg>';
   function measureBtn(key, label, val, hint) {
     const hidden = RM.isHidden(key);
-    return '<button class="meas' + (hidden ? ' hidden-val' : '') + '" data-reveal="' + key + '"' +
-      (hidden ? ' title="Toque para revelar"' : ' tabindex="-1"') + '>' +
+    const eyeable = 'abchmn'.includes(key);
+    const on = RM.state.shown.includes(key);
+    return '<div class="meas' + (hidden ? ' hidden-val' : '') + '">' +
+      '<button class="meas-main" data-reveal="' + key + '"' + (hidden ? ' title="Toque para revelar"' : ' tabindex="-1"') + '>' +
       '<span><span class="k">' + label + '</span> <span class="hint">' + hint + '</span></span>' +
-      '<span class="v">' + (hidden ? '<span class="qmark">?</span>' : val) + '</span></button>';
+      '<span class="v">' + (hidden ? '<span class="qmark">?</span>' : val) + '</span></button>' +
+      (eyeable ? '<button class="eye" data-eye="' + key + '" aria-pressed="' + on + '" title="' + (on ? 'Esconder' : 'Mostrar') +
+        ' o valor de ' + key + ' na figura" aria-label="Valor de ' + key + ' na figura">' + EYE + '</button>' : '') +
+      '</div>';
   }
 
   function renderSide(t) {
@@ -341,7 +363,17 @@
         render();
       };
       svg.addEventListener('click', reveal);
-      measuresEl.addEventListener('click', reveal);
+      measuresEl.addEventListener('click', (evt) => {
+        const eye = evt.target.closest('[data-eye]');
+        if (eye) {
+          const k = eye.getAttribute('data-eye');
+          const cur = RM.state.shown;
+          const next = cur.includes(k) ? cur.replace(k, '') : cur + k;
+          RM.set(Object.assign({ shown: next }, RM.state.values ? {} : { values: true }));
+          return;
+        }
+        reveal(evt);
+      });
       relationsEl.addEventListener('click', (evt) => {
         const b = evt.target.closest('[data-rel]');
         if (!b) return;

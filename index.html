@@ -80,6 +80,19 @@
           </button>
         </div>
       </div>
+      <div class="layerbar" role="group" aria-label="Mostrar na figura">
+        <span class="fb-label">Mostrar</span>
+        <button class="chip" data-layer="alt">Altura</button>
+        <button class="chip" data-layer="names">Nomes</button>
+        <button class="chip" data-layer="values">Valores</button>
+        <button class="chip" data-layer="angles">Ângulos</button>
+        <button class="chip" data-layer="fill">Cores</button>
+        <button class="chip" data-layer="arc">Semicírculo</button>
+        <button class="chip" data-layer="grid">Malha</button>
+        <span class="chip-sep" aria-hidden="true"></span>
+        <button class="chip chip-ghost" data-layers="all">Tudo</button>
+        <button class="chip chip-ghost" data-layers="none">Só o triângulo</button>
+      </div>
       <svg class="stage" id="lab-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Triângulo retângulo ABC com a altura AH"></svg>
       <p class="stage-hint">Arraste o vértice <b>A</b> sobre o semicírculo ou o vértice <b>C</b> para mudar o triângulo. Arraste em qualquer outro ponto da figura para <b>girá-la</b>.</p>
     </section>
@@ -235,6 +248,8 @@
       <section class="pgroup">
         <h3>O que mostrar</h3>
         <label class="switch"><input type="checkbox" id="ck-hide"><span>Modo mistério (valores ocultos, toque para revelar)</span></label>
+        <label class="switch"><input type="checkbox" id="ck-alt"><span>Altura, com as projeções <var>m</var> e <var>n</var></span></label>
+        <label class="switch"><input type="checkbox" id="ck-names"><span>Nomes dos lados</span></label>
         <label class="switch"><input type="checkbox" id="ck-values"><span>Valores junto às figuras</span></label>
         <label class="switch"><input type="checkbox" id="ck-angles"><span>Ângulos β e γ</span></label>
         <label class="switch"><input type="checkbox" id="ck-fill"><span>Colorir os triângulos menores</span></label>
