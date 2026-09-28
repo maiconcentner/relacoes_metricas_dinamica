@@ -32,6 +32,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Botão **▶** para reproduzir a dedução inteira sozinha.
 
 ### Exercícios e aplicações (Fase 3)
+- Nas cenas, o triângulo é **desenhado aos poucos** sobre a situação; depois a cena se dissolve e os triângulos ficam exatamente no mesmo lugar antes de começarem os movimentos.
 - **Contexto**: sem contexto, **Telhado** (caibros, viga e pontalete), **Torre com cabos**, **Praça** (caminho mais curto até a avenida) ou **Escada com escora**. A cena aparece desenhada, o enunciado usa as palavras da situação e o primeiro passo é encontrar o triângulo retângulo escondido nela. As medidas ficam realistas para cada situação.
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
 - **Montar o meu**: marque quais medidas são dados e qual é pedida; o solucionador diz se dá para resolver.
@@ -50,7 +51,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
   - **Amarelo fixo** (padrão): o amarelo fica parado e serve de referência; o grande é espelhado e girado, e o verde só é girado.
   - **Em pé**: ângulo reto embaixo, catetos na vertical e na horizontal, hipotenusa na diagonal.
   - **Hipotenusa na base**: hipotenusa horizontal, ângulo reto em cima.
-- As reflexões são sempre numa reta **vertical ou horizontal**, fáceis de acompanhar; depois vem a rotação. Os textos dos passos dizem quem espelha, quem gira e quem fica parado.
+- **Girar antes de espelhar**: só o triângulo grande é espelhado, porque ele é a imagem no espelho dos menores e nenhuma rotação resolve; os outros só giram. Nas comparações de dois triângulos, um deles fica parado (o amarelo, se estiver na comparação; senão, o verde).
+- As reflexões são sempre numa reta **vertical ou horizontal**, fáceis de acompanhar. Os textos dos passos dizem quem espelha, quem gira (quantos graus e em que sentido) e quem fica parado.
 
 ### Painel do professor (botão **Professor** ou tecla `P`)
 - Hipotenusa e projeção por controle deslizante ou digitadas; ou definir pelos catetos `b` e `c`.

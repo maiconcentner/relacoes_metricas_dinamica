@@ -385,11 +385,23 @@
   /* Passos de semelhança usam a mini-animação; os outros, a figura do exercício. */
   function render() { showStep(0); }
   function showStep(dir) {
-    if (!ex || !ex.sol) { if (mini) mini.stop(); els.svg.innerHTML = ''; return; }
+    if (!ex || !ex.sol) { if (mini) mini.stop(); els.fig.innerHTML = ''; els.miniG.innerHTML = ''; return; }
     const st = ex.sol[ex.cur];
-    if (!st || !st.mini) { if (mini) mini.stop(); renderFig(); return; }
+    if (!st || !st.mini) {
+      // Volta para a figura (com a cena): dissolve a animação e mostra a figura
+      if (mini) mini.stop();
+      renderFig({ animIn: dir === 1 && ex.cur === 1 && !!sceneOf(ex) });
+      els.fig.style.opacity = 1;
+      els.miniG.style.opacity = 0;
+      return;
+    }
     const m = st.mini;
-    const o = { t: ex.t, hl: m.hl, label: m.label, ghost: m.ghost, mirrorKey: m.mirrorKey };
+    // Os triângulos "no lugar" ficam exatamente onde estavam na figura do exercício
+    const FP = figTransform(ex.t);
+    const anchor = { k: Math.hypot(FP.C[0] - FP.B[0], FP.C[1] - FP.B[1]) / ex.t.a, B: FP.B, C: FP.C };
+    const o = { t: ex.t, hl: m.hl, label: m.label, ghost: m.ghost, mirrorKey: m.mirrorKey, anchor };
+    els.fig.style.opacity = 0;
+    els.miniG.style.opacity = 1;
     // Anima só entre passos vizinhos com os mesmos triângulos; senão, vai direto
     const prev = ex.sol[ex.cur - dir];
     const same = prev && prev.mini && prev.mini.keys.join() === m.keys.join();
@@ -407,8 +419,9 @@
     ex.cur = RM.clamp(cur, 0, sol.length - 1);
   }
 
-  function renderFig() {
-    if (!ex || !ex.sol) { els.svg.innerHTML = ''; return; }
+  function renderFig(opt) {
+    const animIn = opt && opt.animIn;
+    if (!ex || !ex.sol) { els.fig.innerHTML = ''; return; }
     const t = ex.t;
     const P = figTransform(t);
     const step = ex.sol[ex.cur] || { fig: {}, found: [] };
@@ -423,7 +436,9 @@
     const fs = D.fs(28);
     let out = '';
     const sc = sceneOf(ex);
-    if (sc) out += '<g class="scene">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
+    // Depois de encontrado o triângulo, a cena fica mais clara para ele se destacar
+    if (sc) out += '<g class="scene' + (animIn ? ' scene-dim-in' : '') + '" style="opacity:' + (ex.cur >= 1 ? 0.55 : 1) + '">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
+    const drawIn = animIn ? ' pathLength="1" class="draw-in"' : '';
     // Na cena, o triângulo aparece discreto até ser "encontrado" (passo 1)
     const hidden = sc && ex.cur === 0;
 
@@ -448,8 +463,8 @@
     // Contornos
     const bigStroke = fill.has('big') ? 4.5 : 3;
     if (!hidden) {
-      out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:' + bigStroke + ';stroke-linejoin:round"');
-      if (showAlt) out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+      out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:' + bigStroke + ';stroke-linejoin:round"' + drawIn);
+      if (showAlt) out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;' + (animIn ? '' : 'stroke-dasharray:8 6') + '"' + drawIn);
     }
 
     // Destaques
@@ -505,7 +520,7 @@
     out += D.text(D.vertexLabelPos(P.C, G, 28), 'C', 'class="vlabel" font-size="' + vfs + '"');
     if (showAlt) out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(14)), 'H', 'class="vlabel" font-size="' + D.fs(22) + '" style="fill:var(--muted)"');
 
-    els.svg.innerHTML = out;
+    els.fig.innerHTML = animIn ? out.replace(/class="(slabel|vlabel)"/g, 'class="$1 fade-in"') : out;
   }
 
   /* ---------- Painel ---------- */
@@ -628,7 +643,9 @@
         prev: document.getElementById('ex-prev'),
         next: document.getElementById('ex-next'),
       };
-      mini = RM.sim.createMini(els.svg);
+      els.fig = document.getElementById('exe-fig');
+      els.miniG = document.getElementById('exe-mini');
+      mini = RM.sim.createMini(els.miniG);
       document.getElementById('ex-method').addEventListener('click', (e) => {
         const b = e.target.closest('[data-v]');
         if (!b) return;

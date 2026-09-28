@@ -58,9 +58,11 @@
   }
 
   /* Rotação/reflexão (R(rot)·diag(1,flip)) que leva a peça à posição de comparação.
-     'fixo': a mesma posição do triângulo amarelo, que não se move.
-     'pe'  : ângulo reto embaixo à esquerda, vértice de γ acima dele, β à direita.
-     'base': hipotenusa horizontal, β à esquerda, ângulo reto em cima. */
+     A "mão" da posição final é sempre a dos triângulos menores (amarelo e verde), para que
+     só o triângulo grande precise ser espelhado: espelhar só quando girar não resolve.
+     'fixo': a mesma posição do amarelo, que não se move.
+     'pe'  : ângulo reto embaixo, vértice de γ acima dele, hipotenusa na diagonal.
+     'base': hipotenusa horizontal, ângulo reto em cima. */
   function legs(pc) {
     const L = pc.local, r = pc.roles;
     const g = [L[r.gamma][0] - L[r.right][0], L[r.gamma][1] - L[r.right][1]];
@@ -73,23 +75,19 @@
     const flip = Math.sign(cross) === refSign ? 1 : -1;
     return { rot: refDir - Math.atan2(g[1] * flip, g[0]), flip };
   }
-  function orientation(pc, pose, P, fc) {
-    if (pose === 'fixo') {
-      const y = legs(P.p1);
-      return orientByRef(pc, fc.rot + Math.atan2(y.g[1] * fc.flip, y.g[0]), Math.sign(y.cross * fc.flip));
-    }
-    if (pose === 'pe') return orientByRef(pc, Math.PI / 2, -1);
+  function orientation(pc, pose, P, fc, refKey) {
+    const y = legs(P[refKey || 'p1']); // triângulo de referência (fica parado no modo 'fixo')
+    const ySign = Math.sign(y.cross * fc.flip); // "mão" dos menores, como aparecem na figura
+    if (pose === 'fixo') return orientByRef(pc, fc.rot + Math.atan2(y.g[1] * fc.flip, y.g[0]), ySign);
+    if (pose === 'pe') return orientByRef(pc, Math.PI / 2, ySign);
+    // 'base': hipotenusa horizontal e ângulo reto em cima, com a mão dos menores
     const L = pc.local, r = pc.roles;
-    for (const flip of [1, -1]) {
-      let rot, v;
-      {
-        const d = [L[r.gamma][0] - L[r.beta][0], (L[r.gamma][1] - L[r.beta][1]) * flip];
-        rot = -Math.atan2(d[1], d[0]);
-        v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
-        if (v[r.right][1] < v[r.beta][1] - 1e-9) return { rot, flip };
-      }
-    }
-    return { rot: 0, flip: 1 };
+    const flip = Math.sign(legs(pc).cross) === ySign ? 1 : -1;
+    const d = [L[r.gamma][0] - L[r.beta][0], (L[r.gamma][1] - L[r.beta][1]) * flip];
+    let rot = -Math.atan2(d[1], d[0]);
+    const v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
+    if (v[r.right][1] > v[r.beta][1]) rot += Math.PI;
+    return { rot, flip };
   }
 
   /* Posição da figura original escolhida pelo professor (girada/espelhada). */
@@ -105,11 +103,11 @@
   /* Configurações de cada peça em cada fase da montagem:
      - mesma "mão" da posição final: só uma rotação (pelo menor ângulo);
      - "mão" trocada: reflexão numa reta vertical ou horizontal (fácil de ver) e depois rotação. */
-  function phaseConfs(P) {
+  function phaseConfs(P, refKey) {
     const fc = figConf();
     const out = {};
     ['big', 'p1', 'p2'].forEach((key) => {
-      const o = orientation(P[key], RM.state.pose, P, fc);
+      const o = orientation(P[key], RM.state.pose, P, fc, refKey);
       if (o.flip === fc.flip) {
         const base = { rot: fc.rot, ax: 0, flip: fc.flip };
         const d = normRad(o.rot - fc.rot);
@@ -762,10 +760,20 @@
   /* ---------- Mini-animação para os cartões de dedução ----------
      Mostra só alguns triângulos: no lugar (dentro de ABC) ou alinhados lado a lado,
      passando pelas fases split → flip → rot, uma peça e um movimento de cada vez. */
-  function miniLayout(t, keys, phases) {
+  /* Nas comparações de dois triângulos, um deles fica parado: o amarelo se estiver entre eles, senão o verde. */
+  function refFor(keys) { return keys.includes('p1') ? 'p1' : keys.includes('p2') ? 'p2' : 'p1'; }
+
+  function miniLayout(t, keys, phases, anchor) {
     const P = pieces(t);
-    const C = phaseConfs(P);
+    const C = phaseConfs(P, refFor(keys));
     const whole = layout('whole', t, P, {});
+    if (anchor) {
+      // "No lugar" com a mesma escala e posição de outra figura (ex.: a cena do exercício)
+      const w = (key, conf) => Object.assign({ s: anchor.k, op: 1 }, conf);
+      whole.big = placeVertex(P.big, w('big', C.big.split), 'B', anchor.B);
+      whole.p1 = placeVertex(P.p1, w('p1', C.p1.split), 'B', anchor.B);
+      whole.p2 = placeVertex(P.p2, w('p2', C.p2.split), 'C', anchor.C);
+    }
     const ds = keys.map((key) => {
       const d = ['split', 'flip', 'rot'].map((ph) => dims(P[key], C[key][ph]));
       return { w: Math.max(...d.map((x) => x.w)), h: Math.max(...d.map((x) => x.h)) };
@@ -790,7 +798,7 @@
 
   /* Sequência de fases para alinhar as peças, um movimento por vez. */
   function alignSequence(t, keys) {
-    const C = phaseConfs(pieces(t));
+    const C = phaseConfs(pieces(t), refFor(keys));
     const phases = {};
     keys.forEach((k) => { phases[k] = 'split'; });
     const seq = [{ phases: Object.assign({}, phases), move: null }];
@@ -896,7 +904,7 @@
       show(o, keys, phases, dur) {
         token++;
         opts = Object.assign({}, o);
-        tweenTo(miniLayout(o.t, keys, phases), dur || 0);
+        tweenTo(miniLayout(o.t, keys, phases, o.anchor), dur || 0);
       },
       /* Alinha as peças, um movimento por vez. onMove(move) é chamado a cada movimento. */
       align(o, keys, onMove) {

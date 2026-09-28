@@ -546,6 +546,15 @@ details.card summary { cursor: pointer; }
 .replay { display: inline-flex; align-items: center; gap: 6px; }
 .replay svg { width: 16px; height: 16px; }
 
+/* ===== Transições da figura do exercício ===== */
+.xfade { transition: opacity 0.7s ease; }
+@keyframes drawIn { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.draw-in { stroke-dasharray: 1; animation: drawIn 1.4s ease-out both; }
+@keyframes dimIn { from { opacity: 1; } to { opacity: 0.55; } }
+.scene-dim-in { animation: dimIn 1s ease both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.stage .fade-in { animation: fadeIn 0.7s 0.8s ease both; }
+
 /* ===== Responsivo ===== */
 @media (max-width: 900px) {
   .view { grid-template-columns: minmax(0, 1fr); }
