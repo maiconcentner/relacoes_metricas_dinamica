@@ -30,7 +30,7 @@
   let sel = 'c2';
   let step = 0;
   let steps = [];
-  let area = { sc: 0, sb: 0, ext: 0, fillC: 0, fillB: 0 };
+  let area = { gc: 0, gb: 0, ga: 0, ext: 0, sc: 0, sb: 0, fillC: 0, fillB: 0 };
   let areaAnim = null;
   let liveMove = -1;
 
@@ -64,6 +64,7 @@
       {
         title: 'Colocando na mesma posição',
         replay: true,
+        keys,
         html: () => {
           const moves = mini.moves(RM.tri(), keys);
           const items = moves.map((mv, idx) => {
@@ -135,34 +136,54 @@
     return lerpPts(g.par2, g.rect, s - 2);
   }
 
+  /* Estado da demonstração: g* = quanto cada quadrado já cresceu, ext = altura prolongada,
+     sc/sb = etapa do movimento de cada quadrado (0 quadrado → 1 paralelogramo → 2 girado → 3 retângulo). */
+  const AREA_ZERO = { gc: 0, gb: 0, ga: 0, ext: 0, sc: 0, sb: 0, fillC: 0, fillB: 0 };
+  const AS = (o) => Object.assign({}, AREA_ZERO, o);
   const AREA_STEPS = [
-    { title: 'Quadrados sobre os lados', st: { sc: 0, sb: 0, ext: 0, fillC: 0, fillB: 0 },
-      html: () => '<p>Construímos um quadrado sobre cada lado. As áreas são ' + i('c') + '², ' + i('b') + '² e ' + i('a') + '².</p>' +
-        '<p>O Teorema de Pitágoras diz que os dois quadrados menores, juntos, têm a mesma área do maior. Vamos ver isso só movendo as figuras.</p>' },
-    { title: 'A altura divide o quadrado maior', st: { sc: 0, sb: 0, ext: 1, fillC: 0, fillB: 0 },
-      html: () => '<p>Prolongando a altura <b>AH</b>, o quadrado da hipotenusa fica dividido em dois retângulos:</p>' +
-        ml('um de lados ' + i('a') + ' e ' + i('m') + ' → área ' + i('a') + ' · ' + i('m')) + ml('outro de lados ' + i('a') + ' e ' + i('n') + ' → área ' + i('a') + ' · ' + i('n')) },
-    { title: 'Deslizando o quadrado amarelo', st: { sc: 1, sb: 0, ext: 1, fillC: 0, fillB: 0 },
+    { title: 'O triângulo retângulo', st: AS({}),
+      html: () => '<p>Começamos com o triângulo retângulo ABC: catetos ' + i('b') + ' e ' + i('c') + ' e hipotenusa ' + i('a') + '.</p>' +
+        '<p>Vamos construir, um de cada vez, um quadrado sobre cada lado.</p>' },
+    { title: 'Um quadrado sobre o cateto c', st: AS({ gc: 1 }), move: true,
+      html: () => '<p>O quadrado cresce a partir do lado <b>AB</b>. Seu lado mede ' + i('c') + ', então sua área é ' + i('c') + ' · ' + i('c') + ' = ' + i('c') + '².</p>' + areaNum('c') },
+    { title: 'Um quadrado sobre o cateto b', st: AS({ gc: 1, gb: 1 }), move: true,
+      html: () => '<p>Agora sobre o lado <b>AC</b>. A área é ' + i('b') + '².</p>' + areaNum('b') },
+    { title: 'E um sobre a hipotenusa', st: AS({ gc: 1, gb: 1, ga: 1 }), move: true,
+      html: () => '<p>Por último, o quadrado sobre a hipotenusa <b>BC</b>, de área ' + i('a') + '².</p>' + areaNum('a') },
+    { title: 'A pergunta', st: AS({ gc: 1, gb: 1, ga: 1 }),
+      html: () => '<p>O Teorema de Pitágoras diz que os dois quadrados menores, juntos, têm a mesma área do maior:</p>' +
+        ml(i('c') + '² + ' + i('b') + '² = ' + i('a') + '² &nbsp;?') +
+        '<p>Vamos mostrar isso <b>mudando as figuras de lugar sem mudar a área</b> delas.</p>' },
+    { title: 'A altura corta o quadrado maior', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1 }), move: true,
+      html: () => '<p>Prolongamos a altura <b>AH</b> até o outro lado do quadrado maior. Ele fica dividido em dois retângulos:</p>' +
+        ml('lados ' + i('a') + ' e ' + i('m') + ' → área ' + i('a') + ' · ' + i('m')) + ml('lados ' + i('a') + ' e ' + i('n') + ' → área ' + i('a') + ' · ' + i('n')) },
+    { title: 'Deslizando o quadrado amarelo', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 1 }), move: true,
       html: () => '<p>Deslizamos o lado de cima do quadrado ao longo da sua própria reta (um <b>cisalhamento</b>). Ele vira um paralelogramo.</p>' +
-        '<p>A base e a altura continuam as mesmas, então <b>a área não muda</b>.</p>' },
-    { title: 'Girando 90°', st: { sc: 2, sb: 0, ext: 1, fillC: 0, fillB: 0 },
-      html: () => '<p>Giramos o paralelogramo 90° no sentido horário em torno de <b>B</b>. Girar também não muda a área.</p>' },
-    { title: 'Deslizando de novo', st: { sc: 3, sb: 0, ext: 1, fillC: 1, fillB: 0 },
+        '<p>A base e a altura continuam as mesmas, então <b>a área não muda</b>: repare no número junto da figura.</p>' },
+    { title: 'Girando 90°', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 2 }), move: true,
+      html: () => '<p>Giramos o paralelogramo 90° no sentido horário, em torno de <b>B</b>. Girar também não muda a área.</p>' },
+    { title: 'Deslizando de novo', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 3, fillC: 1 }), move: true,
       html: () => '<p>Mais um deslizamento, agora na vertical, e o paralelogramo vira exatamente o retângulo ' + i('a') + ' · ' + i('m') + '.</p>' +
         '<p>A área nunca mudou. Então:</p>' + ml('<span class="result">' + i('c') + '² = ' + i('a') + ' · ' + i('m') + '</span>') +
         '<p>É a mesma relação que tiramos da semelhança!</p>' + check('c') },
-    { title: 'Agora o quadrado verde', st: { sc: 3, sb: 1, ext: 1, fillC: 1, fillB: 0 },
+    { title: 'Deslizando o quadrado verde', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 3, fillC: 1, sb: 1 }), move: true,
       html: () => '<p>Fazemos o mesmo com o quadrado de ' + i('b') + '. Primeiro, o deslizamento: a área não muda.</p>' },
-    { title: 'Girando 90°', st: { sc: 3, sb: 2, ext: 1, fillC: 1, fillB: 0 },
+    { title: 'Girando 90°', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 3, fillC: 1, sb: 2 }), move: true,
       html: () => '<p>Giramos 90° no sentido anti-horário, em torno de <b>C</b>.</p>' },
-    { title: 'Deslizando de novo', st: { sc: 3, sb: 3, ext: 1, fillC: 1, fillB: 1 },
+    { title: 'Deslizando de novo', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 3, fillC: 1, sb: 3, fillB: 1 }), move: true,
       html: () => '<p>O paralelogramo vira o retângulo ' + i('a') + ' · ' + i('n') + ':</p>' +
         ml('<span class="result">' + i('b') + '² = ' + i('a') + ' · ' + i('n') + '</span>') + check('b') },
-    { title: 'Pitágoras', st: { sc: 3, sb: 3, ext: 1, fillC: 1, fillB: 1 },
+    { title: 'Pitágoras', st: AS({ gc: 1, gb: 1, ga: 1, ext: 1, sc: 3, fillC: 1, sb: 3, fillB: 1 }),
       html: () => '<p>Os dois retângulos, juntos, formam o quadrado da hipotenusa:</p>' +
         ml(i('a') + '² = ' + i('a') + ' · ' + i('m') + ' + ' + i('a') + ' · ' + i('n')) +
         ml('<span class="result">' + i('a') + '² = ' + i('c') + '² + ' + i('b') + '²</span>') + check('a') },
   ];
+
+  function areaNum(which) {
+    if (RM.state.hide) return '';
+    const t = RM.tri();
+    return ml('<span class="num">Com os valores:</span> ' + i(which) + '² = ' + F(t[which]) + '² = ' + F(t[which] * t[which]));
+  }
 
   function check(which) {
     if (RM.state.hide) return '';
@@ -184,6 +205,11 @@
     return (p) => [W / 2 + k * (p[0] - cx), 310 - k * (p[1] - cy)];
   }
 
+  /* Quadrado "crescendo" a partir do lado PQ (g de 0 a 1). */
+  function grown(P, Q, far1, far2, g) {
+    return [P, Q, [Q[0] + (far1[0] - Q[0]) * g, Q[1] + (far1[1] - Q[1]) * g], [P[0] + (far2[0] - P[0]) * g, P[1] + (far2[1] - P[1]) * g]];
+  }
+
   function renderArea(mode) {
     const t = RM.tri();
     const g = areaGeom(t);
@@ -192,79 +218,106 @@
     const fs = D.fs(26);
     const poly = (P, style) => D.poly(P.map(S), 'style="' + style + '"');
     const cen = (P) => { const q = P.map(S); return [q.reduce((x, p) => x + p[0], 0) / q.length, q.reduce((x, p) => x + p[1], 0) / q.length]; };
+    const showNum = !RM.state.hide;
+    const areaTxt = (sym, v) => sym + (showNum ? ' = ' + F(v) : '');
+    const P = { A: S(g.A), B: S(g.B), C: S(g.C), H: S(g.H) };
     let out = '';
 
     if (mode !== 'plain') {
-      // Quadrado da hipotenusa e seus retângulos
-      out += poly([g.B, g.C, g.C2, g.B2], 'fill:none;stroke:var(--big);stroke-width:2.6');
-      if (s.fillC > 0) out += poly(g.c.rect, 'fill:var(--p1-fill);stroke:none;opacity:' + s.fillC.toFixed(2));
-      if (s.fillB > 0) out += poly(g.b.rect, 'fill:var(--p2-fill);stroke:none;opacity:' + s.fillB.toFixed(2));
-      if (s.ext > 0) {
-        out += '<g style="opacity:' + s.ext.toFixed(2) + '">' + D.line(S(g.H), S(g.L), 'style="stroke:var(--ink);stroke-width:2;stroke-dasharray:8 6"');
-        if (s.sc < 3) out += D.text(cen(g.c.rect), 'a·m', 'class="alabel" font-size="' + fs + '" style="fill:var(--muted)"');
-        if (s.sb < 3) out += D.text(cen(g.b.rect), 'a·n', 'class="alabel" font-size="' + fs + '" style="fill:var(--muted)"');
-        out += '</g>';
+      // Quadrado da hipotenusa (cresce para baixo) e seus retângulos
+      if (s.ga > 0) {
+        const hq = grown(g.B, g.C, g.C2, g.B2, s.ga);
+        out += poly(hq, 'fill:var(--big-fill);stroke:var(--big);stroke-width:2.6');
+        if (s.fillC > 0) out += poly(g.c.rect, 'fill:var(--p1-fill);stroke:none;opacity:' + s.fillC.toFixed(2));
+        if (s.fillB > 0) out += poly(g.b.rect, 'fill:var(--p2-fill);stroke:none;opacity:' + s.fillB.toFixed(2));
+        if (s.ext > 0.01) {
+          const end = [g.H[0] + (g.L[0] - g.H[0]) * s.ext, g.H[1] + (g.L[1] - g.H[1]) * s.ext];
+          out += D.line(S(g.H), S(end), 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+          const op = Math.max(0, (s.ext - 0.6) / 0.4).toFixed(2);
+          if (s.sc < 2.5) out += D.text(cen(g.c.rect), 'a·m', 'class="alabel" font-size="' + fs + '" style="fill:var(--muted);opacity:' + op + '"');
+          if (s.sb < 2.5) out += D.text(cen(g.b.rect), 'a·n', 'class="alabel" font-size="' + fs + '" style="fill:var(--muted);opacity:' + op + '"');
+        }
+        if (s.ext < 0.3 && s.ga > 0.6) out += D.text(cen(hq), areaTxt('a²', t.a * t.a), 'class="alabel" font-size="' + D.fs(28) + '" style="fill:var(--big)"');
       }
-      if (s.ext < 1 && s.sc === 0 && s.sb === 0) out += D.text(cen([g.B, g.C, g.C2, g.B2]), 'a²', 'class="alabel" font-size="' + D.fs(30) + '" style="fill:var(--big)"');
-      // Contorno do lugar original de cada quadrado
-      if (s.sc > 0) out += poly(g.c.sq, 'fill:none;stroke:var(--p1);stroke-width:1.6;stroke-dasharray:6 6;opacity:.7');
-      if (s.sb > 0) out += poly(g.b.sq, 'fill:none;stroke:var(--p2);stroke-width:1.6;stroke-dasharray:6 6;opacity:.7');
-      // Formas que se movem
-      const cs = shapeAt(g.c, s.sc), bs = shapeAt(g.b, s.sb);
-      out += poly(cs, 'fill:var(--p1-fill);stroke:var(--p1);stroke-width:2.6;stroke-linejoin:round');
-      out += poly(bs, 'fill:var(--p2-fill);stroke:var(--p2);stroke-width:2.6;stroke-linejoin:round');
-      out += D.text(cen(cs), 'c²', 'class="alabel" font-size="' + D.fs(30) + '" style="fill:var(--p1)"');
-      out += D.text(cen(bs), 'b²', 'class="alabel" font-size="' + D.fs(30) + '" style="fill:var(--p2)"');
+      // Contorno do lugar original de cada quadrado que já se moveu
+      if (s.sc > 0.02) out += poly(g.c.sq, 'fill:none;stroke:var(--p1);stroke-width:1.6;stroke-dasharray:6 6;opacity:.7');
+      if (s.sb > 0.02) out += poly(g.b.sq, 'fill:none;stroke:var(--p2);stroke-width:1.6;stroke-dasharray:6 6;opacity:.7');
     }
 
-    // Triângulo
-    const P = { A: S(g.A), B: S(g.B), C: S(g.C), H: S(g.H) };
-    out += D.poly([P.A, P.B, P.C], 'style="fill:var(--surface);stroke:var(--big);stroke-width:3;stroke-linejoin:round"');
+    // Triângulo (as figuras que se movem passam por cima dele)
+    out += D.poly([P.A, P.B, P.C], 'style="fill:var(--surface);stroke:none"');
     out += D.poly([P.A, P.B, P.C], 'style="fill:var(--big-fill);stroke:none"');
-    out += D.rightMark(P.A, P.B, P.C, 13, 'var(--ink)');
     if (mode === 'plain' || s.ext > 0) {
-      out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2;stroke-dasharray:8 6"');
+      out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
       out += D.rightMark(P.H, P.C, P.A, 10, 'var(--ink)');
     }
+
+    if (mode !== 'plain') {
+      const shape = (sh, gg, st, fill, stroke, sym, val) => {
+        if (gg <= 0) return '';
+        const pts = st > 0 ? shapeAt(sh, st) : grown(sh.sq[0], sh.sq[1], sh.sq[2], sh.sq[3], gg);
+        let o = poly(pts, 'fill:' + fill + ';stroke:' + stroke + ';stroke-width:2.6;stroke-linejoin:round');
+        if (gg > 0.6) o += D.text(cen(pts), areaTxt(sym, val), 'class="alabel" font-size="' + D.fs(26) + '" style="fill:' + stroke + '"');
+        return o;
+      };
+      out += shape(g.c, s.gc, s.sc, 'var(--p1-fill)', 'var(--p1)', 'c²', t.c * t.c);
+      out += shape(g.b, s.gb, s.sb, 'var(--p2-fill)', 'var(--p2)', 'b²', t.b * t.b);
+    }
+
+    // Contorno e marcas do triângulo por cima de tudo
+    out += D.poly([P.A, P.B, P.C], 'style="fill:none;stroke:var(--big);stroke-width:3;stroke-linejoin:round"');
+    out += D.rightMark(P.A, P.B, P.C, 13, 'var(--ink)');
     const G = [(P.A[0] + P.B[0] + P.C[0]) / 3, (P.A[1] + P.B[1] + P.C[1]) / 3];
     const vfs = D.fs(26);
     out += D.text(D.vertexLabelPos(P.A, G, 26), 'A', 'class="vlabel" font-size="' + vfs + '"');
     out += D.text(D.vertexLabelPos(P.B, G, 24), 'B', 'class="vlabel" font-size="' + vfs + '"');
     out += D.text(D.vertexLabelPos(P.C, G, 24), 'C', 'class="vlabel" font-size="' + vfs + '"');
+    const sl = (v, p, q, r, color) => D.text(D.sideLabelPos(p, q, r, D.fs(20)), v, 'class="slabel" font-size="' + fs + '"' + (color ? ' style="fill:' + color + '"' : ''));
     if (mode === 'plain') {
-      const sl = (v, p, q, r, color) => D.text(D.sideLabelPos(p, q, r, D.fs(22)), v, 'class="slabel" font-size="' + fs + '"' + (color ? ' style="fill:' + color + '"' : ''));
       out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(13)), 'H', 'class="vlabel" font-size="' + D.fs(20) + '" style="fill:var(--muted)"');
       out += sl('c', P.A, P.B, P.C, 'var(--hl2)') + sl('b', P.A, P.C, P.B, 'var(--hl2)') + sl('h', P.A, P.H, P.B, 'var(--hl1)');
       out += sl('a', P.B, P.C, P.A);
+    } else {
+      // Nomes dos lados enquanto os quadrados ainda não cobrem o lado
+      if (s.gc < 0.3) out += sl('c', P.A, P.B, P.C);
+      if (s.gb < 0.3) out += sl('b', P.A, P.C, P.B);
+      if (s.ga < 0.3) out += sl('a', P.B, P.C, P.A);
+      if (s.ext > 0) out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(13)), 'H', 'class="vlabel" font-size="' + D.fs(20) + '" style="fill:var(--muted)"');
     }
     els.svg.innerHTML = out;
   }
 
-  function areaGo(target, dur) {
-    if (areaAnim) areaAnim.cancel();
+  function stopAll() {
+    if (areaAnim) { areaAnim.cancel(); areaAnim = null; }
+    if (mini) mini.stop();
+  }
+
+  function areaGo(target, dur, done) {
+    stopAll();
     const from = Object.assign({}, area);
     areaAnim = RM.tween(dur, (e) => {
       Object.keys(target).forEach((k) => { area[k] = from[k] + (target[k] - from[k]) * e; });
       renderArea();
-    }, () => { areaAnim = null; });
+    }, () => { areaAnim = null; if (done) done(); });
   }
 
   function areaSteps() {
     return AREA_STEPS.map((st, idx) => ({
       title: st.title,
       html: st.html,
-      // passos em que um quadrado desliza ou gira
-      replay: idx >= 2 && idx <= 7 ? () => { Object.assign(area, AREA_STEPS[idx - 1].st); } : null,
-      enter: (dir) => {
-        const jump = Math.abs(dir) !== 1;
-        areaGo(st.st, jump ? 0 : 1100 / (RM.state.speed || 1));
+      dur: st.move ? 1700 : 0,
+      // passos com movimento: "Rever movimento" volta ao estado do passo anterior e anima de novo
+      replay: st.move ? () => { Object.assign(area, AREA_STEPS[idx - 1].st); } : null,
+      enter: (dir, done) => {
+        const jump = dir !== 1;
+        areaGo(st.st, jump ? 0 : 1700 / (RM.state.speed || 1), done);
       },
     }));
   }
 
   /* ---------- Cartão algébrico (EM) ---------- */
   function algSteps() {
-    const plain = () => { if (areaAnim) areaAnim.cancel(); renderArea('plain'); };
+    const plain = () => { stopAll(); renderArea('plain'); };
     return [
       { title: 'Ponto de partida', enter: plain,
         html: () => '<p>Da semelhança (ou da área) sabemos que:</p>' + ml(i('a') + ' · ' + i('h') + ' = ' + i('b') + ' · ' + i('c') + ' &nbsp;⇒&nbsp; ' + i('h') + ' = ' + fr(i('b') + ' · ' + i('c'), i('a'))) },
@@ -311,18 +364,44 @@
       '<span class="ded-f">' + c.formula + '</span><span class="ded-sub">' + c.sub + '</span></button>').join('');
   }
 
-  function goTo(n) {
+  function goTo(n, fromPlay) {
+    if (!fromPlay) setPlaying(false);
+    stopAll();
     const dir = n - step;
     step = RM.clamp(n, 0, steps.length - 1);
     renderText();
     steps[step].enter(dir);
+    if (playing) schedulePlay();
+  }
+
+  /* Reprodução automática: avança sozinho, esperando cada movimento terminar. */
+  let playing = false;
+  let playTimer = null;
+  function setPlaying(on) {
+    playing = on;
+    clearTimeout(playTimer);
+    const b = document.getElementById('ded-play');
+    b.classList.toggle('playing', on);
+    b.setAttribute('aria-label', on ? 'Pausar' : 'Reproduzir automaticamente');
+  }
+  function schedulePlay() {
+    clearTimeout(playTimer);
+    if (!playing) return;
+    if (step >= steps.length - 1) { setPlaying(false); return; }
+    const st = steps[step];
+    const sp = RM.state.speed || 1;
+    let wait = (st.dur || 0) / sp + 2600 / sp;
+    if (st.replay === true) wait += (mini.moves(RM.tri(), st.keys || []).length + 1) * 1050 / sp;
+    playTimer = setTimeout(() => { if (playing) goTo(step + 1, true); }, wait);
   }
 
   function select(id) {
+    setPlaying(false);
+    stopAll();
     sel = id;
     step = 0;
     liveMove = -1;
-    area = { sc: 0, sb: 0, ext: 0, fillC: 0, fillB: 0 };
+    area = Object.assign({}, AREA_ZERO);
     build();
     renderList();
     renderText();
@@ -345,11 +424,18 @@
       els.list.addEventListener('click', (e) => { const b = e.target.closest('[data-card]'); if (b) select(b.dataset.card); });
       els.prev.addEventListener('click', () => goTo(step - 1));
       document.getElementById('ded-replay').addEventListener('click', () => {
+        setPlaying(false);
+        stopAll();
         const st = steps[step];
         if (typeof st.replay === 'function') st.replay();
         st.enter(1);
       });
       els.next.addEventListener('click', () => goTo(step + 1));
+      document.getElementById('ded-play').addEventListener('click', () => {
+        if (playing) { setPlaying(false); return; }
+        setPlaying(true);
+        if (step >= steps.length - 1) goTo(0, true); else goTo(step + 1, true);
+      });
       els.dots.addEventListener('click', (e) => { const d = e.target.closest('[data-dstep]'); if (d) goTo(Number(d.dataset.dstep)); });
       RM.on((changed) => {
         if (changed.includes('level')) {

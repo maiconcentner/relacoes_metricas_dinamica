@@ -27,7 +27,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Um cartão por relação: c² = a·m, b² = a·n, h² = m·n, a·h = b·c (e 1/h² = 1/b² + 1/c² no nível EM).
 - Cada cartão mostra onde estão os dois triângulos, alinha os dois **um movimento de cada vez**, destaca os lados correspondentes e chega à relação, conferida com os números do triângulo atual.
 - O botão **Rever movimento** repete a animação do passo atual (nas Deduções e nos Exercícios).
-- **Pitágoras com áreas** (demonstração de Euclides): o quadrado de cada cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um dos retângulos a·m e a·n dentro do quadrado da hipotenusa; a área nunca muda.
+- **Pitágoras com áreas** (demonstração de Euclides): começa só com o triângulo; cada quadrado **cresce** a partir do seu lado, um de cada vez; a altura desce e corta o quadrado maior em a·m e a·n; então cada quadrado de cateto desliza (cisalhamento), gira 90° e desliza de novo até virar um desses retângulos. A área aparece junto da figura e não muda durante os movimentos.
+- Botão **▶** para reproduzir a dedução inteira sozinha.
 
 ### Exercícios (primeira parte da Fase 3)
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
