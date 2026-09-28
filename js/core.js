@@ -20,6 +20,9 @@
     theme: 'auto',
     font: 1,
     speed: 1,
+    rot: 0,           // rotação da figura, em graus (anti-horário)
+    mirror: false,    // figura espelhada
+    pose: 'pe',       // posição para comparar: 'pe' (catetos em pé) | 'base' (hipotenusa na base)
   };
 
   const STORE_KEY = 'relacoes-metricas:v1';
@@ -43,6 +46,14 @@
     const beta = (Math.atan2(b, c) * 180) / Math.PI; // ângulo em B
     const gamma = 90 - beta;                          // ângulo em C
     return { a, b, c, h, m, n, beta, gamma };
+  };
+
+  /* Rotação (graus) que deixa a figura "em pé": ângulo reto embaixo, AC na vertical. */
+  RM.standingRot = function (s) {
+    s = s || RM.state;
+    const t = RM.tri(s);
+    const dx = s.mirror ? -t.n : t.n;
+    return RM.normDeg(90 - (Math.atan2(-t.h, dx) * 180) / Math.PI);
   };
 
   /* ---------- Formatação (pt-BR) ---------- */
@@ -84,7 +95,14 @@
     s.font = clamp(Number(s.font) || 1, 0.85, 1.6);
     s.speed = clamp(Number(s.speed) || 1, 0.25, 3);
     s.snap = [0.1, 0.5, 1].includes(Number(s.snap)) ? Number(s.snap) : 0.5;
+    s.rot = RM.normDeg(Number(s.rot) || 0);
+    s.mirror = !!s.mirror;
+    if (s.pose !== 'base') s.pose = 'pe';
   }
+  RM.normDeg = function (d) {
+    let x = ((d + 180) % 360 + 360) % 360 - 180;
+    return Math.round(x * 10) / 10;
+  };
   function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
   RM.clamp = clamp;
 
@@ -112,6 +130,7 @@
     const s = RM.state;
     const parts = [s.view, 'a' + s.a, 'm' + s.m, 's' + s.step, s.level, 'o' + (s.hide ? 1 : 0), 'd' + s.dec];
     if (s.unit) parts.push('u' + s.unit);
+    parts.push('r' + s.rot, 'f' + (s.mirror ? 1 : 0), s.pose === 'pe' ? 'xp' : 'xb');
     return parts.join('~');
   };
   RM.decodeHash = function (hash) {
@@ -127,6 +146,9 @@
       else if (/^o[01]$/.test(tok)) out.hide = tok === 'o1';
       else if (/^d\d$/.test(tok)) out.dec = parseInt(tok.slice(1), 10);
       else if (/^u(cm|m)$/.test(tok)) out.unit = tok.slice(1);
+      else if (/^r-?[\d.]+$/.test(tok)) out.rot = parseFloat(tok.slice(1));
+      else if (/^f[01]$/.test(tok)) out.mirror = tok === 'f1';
+      else if (tok === 'xp' || tok === 'xb') out.pose = tok === 'xp' ? 'pe' : 'base';
     });
     return Object.keys(out).length ? out : null;
   };

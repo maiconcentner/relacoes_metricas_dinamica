@@ -73,17 +73,43 @@
     return [V[0] + offset * d[0], V[1] + offset * d[1]];
   };
 
-  /* Cota (linha de medida) abaixo de um segmento horizontal. */
-  D.dimension = function (P, Q, dy, label, color, fontSize) {
-    const y = P[1] + dy;
+  /* Normal unitária ao segmento PQ, apontando para longe do ponto R. */
+  D.awayNormal = function (P, Q, R) {
+    const d = unit(sub(Q, P));
+    let nrm = [-d[1], d[0]];
+    const M = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2];
+    const toR = sub(R, M);
+    if (nrm[0] * toR[0] + nrm[1] * toR[1] > 0) nrm = [-nrm[0], -nrm[1]];
+    return nrm;
+  };
+
+  /* Segmento PQ deslocado para longe de R. */
+  D.offsetSeg = function (P, Q, R, dist) {
+    const nrm = D.awayNormal(P, Q, R);
+    return [[P[0] + dist * nrm[0], P[1] + dist * nrm[1]], [Q[0] + dist * nrm[0], Q[1] + dist * nrm[1]]];
+  };
+
+  /* Cota (linha de medida) paralela a PQ, do lado oposto a R. */
+  D.dimension = function (P, Q, R, dist, label, color, fontSize) {
+    const nrm = D.awayNormal(P, Q, R);
+    const [p, q] = D.offsetSeg(P, Q, R, dist);
     const tick = 7;
     let out = '<g style="stroke:' + color + ';stroke-width:1.6;fill:none">';
-    out += D.line([P[0], y], [Q[0], y]);
-    out += D.line([P[0], y - tick], [P[0], y + tick]);
-    out += D.line([Q[0], y - tick], [Q[0], y + tick]);
+    out += D.line(p, q);
+    out += D.line([p[0] - tick * nrm[0], p[1] - tick * nrm[1]], [p[0] + tick * nrm[0], p[1] + tick * nrm[1]]);
+    out += D.line([q[0] - tick * nrm[0], q[1] - tick * nrm[1]], [q[0] + tick * nrm[0], q[1] + tick * nrm[1]]);
     out += '</g>';
-    if (label) out += label([(P[0] + Q[0]) / 2, y + fontSize * 0.75]);
+    if (label) {
+      const off = fontSize * 0.85;
+      out += label([(p[0] + q[0]) / 2 + off * nrm[0], (p[1] + q[1]) / 2 + off * nrm[1]]);
+    }
     return out;
+  };
+
+  /* Posição do rótulo do pé da altura H: dentro do canto entre HA e HB. */
+  D.footLabelPos = function (H, A, B, dist) {
+    const u = unit(sub(A, H)), w = unit(sub(B, H));
+    return [H[0] + dist * (u[0] + w[0]), H[1] + dist * (u[1] + w[1])];
   };
 
   /* Malha quadriculada adaptativa. */

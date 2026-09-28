@@ -21,6 +21,13 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 7. Tabela de lados correspondentes e dedução de cada relação, com os lados destacados na figura e na tabela.
 8. Teorema de Pitágoras como consequência.
 
+### Posição da figura
+- Barra acima de cada figura para **girar** (15° por clique), **espelhar**, deixar **em pé**, **sortear uma posição** qualquer ou voltar ao **padrão**.
+- No Laboratório, arrastar em qualquer ponto fora dos vértices gira a figura livremente. As medidas e as relações continuam valendo em qualquer posição.
+- Na Semelhança, a figura original aparece na posição escolhida, e o botão **Comparar** define como os triângulos são alinhados:
+  - **Em pé**: ângulo reto embaixo, catetos na vertical e na horizontal, hipotenusa na diagonal (padrão).
+  - **Hipotenusa na base**: hipotenusa horizontal, ângulo reto em cima.
+
 ### Painel do professor (botão **Professor** ou tecla `P`)
 - Hipotenusa e projeção por controle deslizante ou digitadas; ou definir pelos catetos `b` e `c`.
 - Exemplos prontos (15-20-25, 3-4-5, 6-8-10, 30-40-50, h = 8 exato, isósceles).
@@ -38,6 +45,9 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 | `L` / `S` | Laboratório / Semelhança |
 | `O` | ocultar ou mostrar valores |
 | `N` | trocar nível EF / EM |
+| `G` / `Shift+G` | girar a figura 15° |
+| `E` | espelhar a figura |
+| `R` | sortear uma posição |
 | `F` | tela cheia |
 | `P` | painel do professor |
 

@@ -53,17 +53,56 @@
     return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
   }
 
-  /* Rotação/reflexão que deixa a peça como ABC: hipotenusa horizontal, β à esquerda, reto em cima. */
-  function orientation(pc) {
+  /* Rotação/reflexão que leva a peça à posição de comparação.
+     'base': hipotenusa horizontal, β à esquerda, ângulo reto em cima.
+     'pe'  : ângulo reto embaixo à esquerda, vértice de γ acima dele, β à direita. */
+  function orientation(pc, pose) {
     const L = pc.local, r = pc.roles;
     for (const flip of [1, -1]) {
-      const d = [L[r.gamma][0] - L[r.beta][0], (L[r.gamma][1] - L[r.beta][1]) * flip];
-      const rot = -Math.atan2(d[1], d[0]);
-      const st = { x: 0, y: 0, s: 1, rot, flip, op: 1 };
-      const v = screenVerts(pc, st);
-      if (v[r.right][1] < v[r.beta][1] - 1e-9) return { rot, flip };
+      let rot, v;
+      if (pose === 'pe') {
+        const d = [L[r.gamma][0] - L[r.right][0], (L[r.gamma][1] - L[r.right][1]) * flip];
+        rot = Math.PI / 2 - Math.atan2(d[1], d[0]);
+        v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
+        if (v[r.beta][0] > v[r.right][0] + 1e-9) return { rot, flip };
+      } else {
+        const d = [L[r.gamma][0] - L[r.beta][0], (L[r.gamma][1] - L[r.beta][1]) * flip];
+        rot = -Math.atan2(d[1], d[0]);
+        v = screenVerts(pc, { x: 0, y: 0, s: 1, rot, flip, op: 1 });
+        if (v[r.right][1] < v[r.beta][1] - 1e-9) return { rot, flip };
+      }
     }
     return { rot: 0, flip: 1 };
+  }
+
+  /* Posição da figura original escolhida pelo professor (girada/espelhada). */
+  function figConf() {
+    const th = (RM.state.rot * Math.PI) / 180;
+    return RM.state.mirror ? { rot: th + Math.PI, flip: -1 } : { rot: th, flip: 1 };
+  }
+  function near(rot, ref) { return rot + 2 * Math.PI * Math.round((ref - rot) / (2 * Math.PI)); }
+
+  /* Configurações (rot/flip) de cada peça em cada fase da montagem. */
+  function phaseConfs(P) {
+    const fc = figConf();
+    const out = {};
+    ['big', 'p1', 'p2'].forEach((key) => {
+      const o = orientation(P[key], RM.state.pose);
+      const fin = { rot: near(o.rot, fc.rot), flip: o.flip };
+      out[key] = { split: fc, flip: { rot: fc.rot, flip: o.flip }, rot: fin, final: fin };
+    });
+    return out;
+  }
+  function dims(pc, conf) {
+    const b = bbox(screenVerts(pc, Object.assign({ x: 0, y: 0, s: 1, op: 1 }, conf)));
+    return { w: b.x1 - b.x0, h: b.y1 - b.y0 };
+  }
+  function placeCenter(pc, base, cx, cy) {
+    const st = Object.assign({ x: 0, y: 0 }, base);
+    const b = bbox(screenVerts(pc, st));
+    st.x = cx - (b.x0 + b.x1) / 2;
+    st.y = cy - (b.y0 + b.y1) / 2;
+    return st;
   }
 
   function placeVertex(pc, base, vname, P) {
@@ -71,13 +110,6 @@
     const v = screenVerts(pc, st);
     st.x = P[0] - v[vname][0];
     st.y = P[1] - v[vname][1];
-    return st;
-  }
-  function placeBottomCenter(pc, base, cx, bottom) {
-    const st = Object.assign({ x: 0, y: 0 }, base);
-    const b = bbox(screenVerts(pc, st));
-    st.x = cx - (b.x0 + b.x1) / 2;
-    st.y = bottom - b.y1;
     return st;
   }
   function placeLeftBottom(pc, base, left, bottom) {
@@ -90,55 +122,65 @@
 
   /* ---------- Layout de cada fase ---------- */
   function layout(kind, t, P) {
-    const o1 = orientation(P.p1), o2 = orientation(P.p2);
-    const id = { rot: 0, flip: 1 };
+    const C = phaseConfs(P);
+    const keys = ['big', 'p1', 'p2'];
     const S = {};
+    const withS = (conf, k) => Object.assign({ s: k, op: 1 }, conf);
 
     if (kind === 'whole') {
-      const k = Math.min(800 / t.a, 400 / t.h);
-      const x0 = W / 2 - (t.a * k) / 2;
-      const base = 300 + (t.h * k) / 2;
-      S.big = placeVertex(P.big, Object.assign({ s: k, op: 1 }, id), 'B', [x0, base]);
-      S.p1 = placeVertex(P.p1, Object.assign({ s: k, op: 1 }, id), 'B', [x0, base]);
-      S.p2 = placeVertex(P.p2, Object.assign({ s: k, op: 1 }, id), 'C', [x0 + t.a * k, base]);
+      const d = dims(P.big, C.big.split);
+      const k = Math.min(800 / d.w, 410 / d.h);
+      S.big = placeCenter(P.big, withS(C.big.split, k), W / 2, 290);
+      const vb = screenVerts(P.big, S.big);
+      S.p1 = placeVertex(P.p1, withS(C.p1.split, k), 'B', vb.B);
+      S.p2 = placeVertex(P.p2, withS(C.p2.split, k), 'C', vb.C);
       return S;
     }
 
     if (kind === 'split' || kind === 'flip' || kind === 'rot') {
-      const k = Math.min(760 / (t.b + t.c), 195 / t.h);
-      const topBase = 58 + t.h * k;
-      S.big = placeVertex(P.big, Object.assign({ s: k, op: 1 }, id), 'B', [W / 2 - (t.a * k) / 2, topBase]);
-      const gap = 70;
-      const total = (t.b + t.c) * k + gap;
-      const start = (W - total) / 2;
-      const c1 = start + (t.c * k) / 2;
-      const c2 = start + t.c * k + gap + (t.b * k) / 2;
-      const bottom = 582;
-      const f1 = kind === 'split' ? id : kind === 'flip' ? { rot: 0, flip: o1.flip } : o1;
-      const f2 = kind === 'split' ? id : kind === 'flip' ? { rot: 0, flip: o2.flip } : o2;
-      S.p1 = placeBottomCenter(P.p1, Object.assign({ s: k, op: 1 }, f1), c1, bottom);
-      S.p2 = placeBottomCenter(P.p2, Object.assign({ s: k, op: 1 }, f2), c2, bottom);
+      // Tamanho máximo de cada peça nas três fases, para nada sair da tela durante a animação
+      const D0 = {};
+      keys.forEach((key) => {
+        const ds = ['split', 'flip', 'rot'].map((ph) => dims(P[key], C[key][ph]));
+        D0[key] = { w: Math.max(...ds.map((d) => d.w)), h: Math.max(...ds.map((d) => d.h)) };
+      });
+      const gapX = 70, gapY = 82;
+      const hRow = Math.max(D0.p1.h, D0.p2.h);
+      const k = Math.min(900 / D0.big.w, (880 - gapX) / (D0.p1.w + D0.p2.w), (500 - gapY) / (D0.big.h + hRow));
+      S.big = placeCenter(P.big, withS(C.big[kind], k), W / 2, 34 + (D0.big.h * k) / 2);
+      const yRow = 34 + D0.big.h * k + gapY + (hRow * k) / 2;
+      const start = (W - (D0.p1.w + D0.p2.w) * k - gapX) / 2;
+      S.p1 = placeCenter(P.p1, withS(C.p1[kind], k), start + (D0.p1.w * k) / 2, yRow);
+      S.p2 = placeCenter(P.p2, withS(C.p2[kind], k), start + D0.p1.w * k + gapX + (D0.p2.w * k) / 2, yRow);
       return S;
     }
 
     if (kind === 'nest') {
-      const k = Math.min(820 / t.a, 440 / t.h);
-      const P0 = [W / 2 - (t.a * k) / 2, 520];
-      S.big = placeVertex(P.big, Object.assign({ s: k, op: 1 }, id), 'B', P0);
-      S.p1 = placeVertex(P.p1, Object.assign({ s: k, op: 1 }, o1), 'B', P0);
-      S.p2 = placeVertex(P.p2, Object.assign({ s: k, op: 1 }, o2), 'A', P0);
+      // Os três com o vértice de β no mesmo ponto
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      keys.forEach((key) => {
+        const st = placeVertex(P[key], withS(C[key].final, 1), P[key].roles.beta, [0, 0]);
+        const b = bbox(screenVerts(P[key], st));
+        x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); y0 = Math.min(y0, b.y0); y1 = Math.max(y1, b.y1);
+      });
+      const k = Math.min(820 / (x1 - x0), 450 / (y1 - y0));
+      const P0 = [W / 2 - (k * (x0 + x1)) / 2, 300 - (k * (y0 + y1)) / 2];
+      keys.forEach((key) => { S[key] = placeVertex(P[key], withS(C[key].final, k), P[key].roles.beta, P0); });
       return S;
     }
 
-    // 'row': os três lado a lado, mesma orientação
+    // 'row': os três lado a lado, na mesma posição
     const gap = 78;
-    const k = Math.min((W - 80 - 2 * gap) / (t.a + t.b + t.c), 330 / t.h);
-    const total = (t.a + t.b + t.c) * k + 2 * gap;
-    let x = (W - total) / 2;
-    const bottom = 300 + (t.h * k) / 2;
-    S.big = placeLeftBottom(P.big, Object.assign({ s: k, op: 1 }, id), x, bottom); x += t.a * k + gap;
-    S.p1 = placeLeftBottom(P.p1, Object.assign({ s: k, op: 1 }, o1), x, bottom); x += t.c * k + gap;
-    S.p2 = placeLeftBottom(P.p2, Object.assign({ s: k, op: 1 }, o2), x, bottom);
+    const ds = keys.map((key) => dims(P[key], C[key].final));
+    const sumW = ds.reduce((a, d) => a + d.w, 0);
+    const maxH = Math.max(...ds.map((d) => d.h));
+    const k = Math.min((W - 80 - 2 * gap) / sumW, 330 / maxH);
+    const bottom = 300 + (maxH * k) / 2;
+    let x = (W - sumW * k - 2 * gap) / 2;
+    keys.forEach((key, idx) => {
+      S[key] = placeLeftBottom(P[key], withS(C[key].final, k), x, bottom);
+      x += ds[idx].w * k + gap;
+    });
     return S;
   }
 
@@ -172,6 +214,10 @@
     const eq = fr('<span class="c-hl1">' + i(r1[c1]) + '</span>', '<span class="c-hl1">' + i(r2[c1]) + '</span>') + ' = ' +
       fr('<span class="c-hl2">' + i(r1[c2]) + '</span>', '<span class="c-hl2">' + i(r2[c2]) + '</span>');
     return { eq, r1, r2 };
+  }
+
+  function poseName() {
+    return RM.state.pose === 'pe' ? '<b>em pé</b>, com a hipotenusa na diagonal' : 'com a <b>hipotenusa na base</b>';
   }
 
   const REL = {
@@ -208,12 +254,16 @@
         : '<p>Agora temos <b>três triângulos</b>: o grande ABC e os dois menores. Vamos separá-los para comparar.</p><p>Repare nas cores dos ângulos: todos têm um <span class="c-beta">β</span>, um <span class="c-gamma">γ</span> e um ângulo reto.</p>' },
     { title: 'Refletindo (espelhando)', layout: 'flip', pieces: 1, angles: 3, labels: 'piece', mirror: true,
       text: (t, lv) => lv === 'em'
-        ? '<p>Aplicamos uma <b>reflexão</b> em cada triângulo menor em relação à reta tracejada. Reflexões são isometrias: preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
-        : '<p>Para comparar, vamos deixar os menores na mesma posição do grande.</p><p>Primeiro, <b>espelhamos</b> cada um na linha tracejada, como se virássemos o triângulo do avesso. Espelhar não muda o tamanho nem os ângulos.</p>' },
+        ? '<p>Para comparar, levamos os três à mesma posição (' + poseName() + '). Os triângulos com orientação invertida sofrem uma <b>reflexão</b> na reta tracejada.</p><p>Reflexões são isometrias: preservam comprimentos e ângulos e invertem a orientação dos vértices.</p>'
+        : '<p>Para comparar, vamos colocar os três na mesma posição: ' + poseName() + '.</p><p>Primeiro, <b>espelhamos</b> na linha tracejada os triângulos que estão "do avesso". Espelhar não muda o tamanho nem os ângulos.</p>' },
     { title: 'Girando', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
-      text: (t, lv) => lv === 'em'
-        ? '<p>Uma <b>rotação</b> (outra isometria) leva a hipotenusa de cada triângulo à horizontal, com o vértice de <span class="c-beta">β</span> à esquerda, o de <span class="c-gamma">γ</span> à direita e o ângulo reto acima, como em △ABC.</p>'
-        : '<p>Depois, <b>giramos</b> cada um até a hipotenusa ficar deitada, com <span class="c-beta">β</span> à esquerda, <span class="c-gamma">γ</span> à direita e o ângulo reto em cima, igual ao triângulo grande.</p>' },
+      text: (t, lv) => (RM.state.pose === 'pe'
+        ? (lv === 'em'
+          ? '<p>Uma <b>rotação</b> (outra isometria) põe cada triângulo em pé: ângulo reto embaixo à esquerda, cateto oposto a <span class="c-beta">β</span> na vertical, cateto oposto a <span class="c-gamma">γ</span> na horizontal e a hipotenusa na diagonal.</p>'
+          : '<p>Depois, <b>giramos</b> cada um até ficar <b>em pé</b>, do jeito que estamos acostumados: ângulo reto embaixo, um cateto de pé, outro deitado e a hipotenusa na diagonal.</p><p><span class="c-gamma">γ</span> fica em cima e <span class="c-beta">β</span> à direita nos três.</p>')
+        : (lv === 'em'
+          ? '<p>Uma <b>rotação</b> (outra isometria) leva a hipotenusa de cada triângulo à horizontal, com o vértice de <span class="c-beta">β</span> à esquerda, o de <span class="c-gamma">γ</span> à direita e o ângulo reto acima.</p>'
+          : '<p>Depois, <b>giramos</b> cada um até a hipotenusa ficar deitada, com <span class="c-beta">β</span> à esquerda, <span class="c-gamma">γ</span> à direita e o ângulo reto em cima.</p>')) },
     { title: 'Mesma forma, tamanhos diferentes', layout: 'rot', pieces: 1, angles: 3, labels: 'piece',
       text: (t, lv) => (lv === 'em'
         ? '<p>Pelo caso <b>AA</b> (ângulo-ângulo):</p>'
@@ -316,10 +366,15 @@
 
     // Espelho (passo de reflexão)
     if (step.mirror) {
-      ['p1', 'p2'].forEach((key) => {
+      const C = phaseConfs(P);
+      ['big', 'p1', 'p2'].forEach((key) => {
+        if (C[key].split.flip === C[key].flip.flip) return;
         const b = bbox(V[key]);
-        const y = cur[key].y;
-        out += D.line([b.x0 - 24, y], [b.x1 + 24, y], 'style="stroke:var(--muted);stroke-width:2;stroke-dasharray:10 7"');
+        const half = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 26;
+        const dx = Math.cos(cur[key].rot), dy = -Math.sin(cur[key].rot);
+        const c = [cur[key].x, cur[key].y];
+        out += D.line([c[0] - half * dx, c[1] - half * dy], [c[0] + half * dx, c[1] + half * dy],
+          'style="stroke:var(--muted);stroke-width:2;stroke-dasharray:10 7"');
       });
     }
 
@@ -426,21 +481,21 @@
     const vfs = D.fs(28);
     let out = '';
     out += vtext(D.vertexLabelPos(v.A, G, 28), 'A', vfs);
-    out += vtext([v.B[0] - 24, v.B[1] + 4], 'B', vfs);
-    out += vtext([v.C[0] + 24, v.C[1] + 4], 'C', vfs);
+    out += vtext(D.vertexLabelPos(v.B, G, 26), 'B', vfs);
+    out += vtext(D.vertexLabelPos(v.C, G, 26), 'C', vfs);
     const off = D.fs(24);
     out += stext(D.sideLabelPos(v.A, v.B, v.C, off), 'c', fs);
     out += stext(D.sideLabelPos(v.A, v.C, v.B, off), 'b', fs);
     if (step.pieces) {
       const Hp = V.p1.H;
       out += D.line(v.A, Hp, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
-      out += vtext([Hp[0] - D.fs(17), Hp[1] - D.fs(17)], 'H', D.fs(22), 'var(--muted)');
+      out += vtext(D.footLabelPos(Hp, v.A, v.B, D.fs(13)), 'H', D.fs(22), 'var(--muted)');
       out += stext(D.sideLabelPos(v.A, Hp, v.B, off), 'h', fs);
-      out += stext([(v.B[0] + Hp[0]) / 2, v.B[1] + D.fs(22)], 'm', fs);
-      out += stext([(Hp[0] + v.C[0]) / 2, v.B[1] + D.fs(22)], 'n', fs);
-      out += D.dimension(v.B, v.C, 56, (pos) => stext([pos[0], pos[1] + 4], 'a', fs), 'var(--muted)', fs);
+      out += stext(D.sideLabelPos(v.B, Hp, v.A, D.fs(22)), 'm', fs);
+      out += stext(D.sideLabelPos(Hp, v.C, v.A, D.fs(22)), 'n', fs);
+      out += D.dimension(v.B, v.C, v.A, 56, (pos) => stext(pos, 'a', fs), 'var(--muted)', fs);
     } else {
-      out += stext([(v.B[0] + v.C[0]) / 2, v.B[1] + D.fs(24)], 'a', fs);
+      out += stext(D.sideLabelPos(v.B, v.C, v.A, D.fs(24)), 'a', fs);
     }
     return out;
   }
@@ -609,6 +664,11 @@
         if (changed.includes('step')) {
           if (RM.state.step >= STEPS.length) { RM.set({ step: STEPS.length - 1 }); return; }
           animateTo(RM.state.step, duration());
+          renderSide();
+          return;
+        }
+        if (['rot', 'mirror', 'pose'].some((k) => changed.includes(k))) {
+          animateTo(RM.state.step, RM.state.view === 'sem' ? 700 / (RM.state.speed || 1) : 0);
           renderSide();
           return;
         }

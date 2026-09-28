@@ -420,6 +420,30 @@ kbd {
   padding: 0 5px; background: var(--surface-2);
 }
 
+/* ===== Barra de posição da figura ===== */
+.figbar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.fb-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fb {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); background: var(--surface-2);
+  border-radius: 7px; padding: 5px 9px;
+  font-size: 0.82rem; font-weight: 700;
+}
+.fb svg { width: 17px; height: 17px; }
+.fb[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.fb-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+#lab-svg { cursor: grab; }
+#lab-svg.rotating { cursor: grabbing; }
+.stage .badge { fill: var(--accent); font-weight: 700; }
+@media (max-width: 600px) {
+  .fb span { display: none; }
+}
+
 /* ===== Responsivo ===== */
 @media (max-width: 900px) {
   .view { grid-template-columns: minmax(0, 1fr); }

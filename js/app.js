@@ -53,6 +53,12 @@
     $('ck-arc').checked = s.arc;
     $('ck-grid').checked = s.grid;
     $('rg-font').value = s.font;
+    $('rg-rot').value = s.rot;
+    $('rot-val').textContent = RM.fmt(s.rot, 0) + '°';
+    $('ck-mirror').checked = s.mirror;
+    segSync('seg-pose', s.pose);
+    document.querySelectorAll('[data-pose]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.pose === s.pose));
+    document.querySelectorAll('.fb[data-act="mirror"]').forEach((b) => b.setAttribute('aria-pressed', s.mirror));
 
     document.documentElement.style.setProperty('--fs', s.font);
     if (s.theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -123,6 +129,11 @@
     [['ck-hide', 'hide'], ['ck-values', 'values'], ['ck-angles', 'angles'], ['ck-fill', 'fill'], ['ck-arc', 'arc'], ['ck-grid', 'grid']]
       .forEach(([id, key]) => $(id).addEventListener('change', (e) => RM.set({ [key]: e.target.checked })));
     $('rg-font').addEventListener('input', (e) => RM.set({ font: Number(e.target.value) }));
+    $('rg-rot').addEventListener('input', (e) => RM.set({ rot: Number(e.target.value) }));
+    $('ck-mirror').addEventListener('change', (e) => RM.set({ mirror: e.target.checked }));
+    segBind('seg-pose', (v) => RM.set({ pose: v }));
+    document.querySelectorAll('[data-pose]').forEach((b) => b.addEventListener('click', () => RM.set({ pose: b.dataset.pose })));
+    document.querySelectorAll('.fb[data-act]').forEach((b) => b.addEventListener('click', () => figAction(b.dataset.act)));
 
     $('share-copy').addEventListener('click', () => {
       const url = shareUrl();
@@ -139,6 +150,24 @@
       const keepView = RM.state.view;
       RM.set(Object.assign({}, RM.DEFAULTS, { view: keepView }), { force: true });
     });
+  }
+
+  /* Ações da barra de posição da figura */
+  function figAction(act) {
+    const s = RM.state;
+    switch (act) {
+      case 'rotL': RM.set({ rot: s.rot + 15 }); break;
+      case 'rotR': RM.set({ rot: s.rot - 15 }); break;
+      case 'mirror': RM.set({ mirror: !s.mirror }); break;
+      case 'stand': RM.set({ rot: RM.standingRot() }); break;
+      case 'random': {
+        let r;
+        do { r = Math.round(Math.random() * 360) - 180; } while (Math.abs(RM.normDeg(r - s.rot)) < 40);
+        RM.set({ rot: r, mirror: Math.random() < 0.5 });
+        break;
+      }
+      case 'reset': RM.set({ rot: 0, mirror: false }); break;
+    }
   }
 
   function segBind(id, fn) {
@@ -176,6 +205,9 @@
       case 'o': RM.set({ hide: !s.hide }); break;
       case 'n': RM.set({ level: s.level === 'ef' ? 'em' : 'ef' }); break;
       case 'f': toggleFullscreen(); break;
+      case 'g': figAction(e.shiftKey ? 'rotR' : 'rotL'); break;
+      case 'e': figAction('mirror'); break;
+      case 'r': figAction('random'); break;
       case 'p': openPanel($('panel').hidden); break;
       default: return;
     }
