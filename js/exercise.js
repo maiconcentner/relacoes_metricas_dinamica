@@ -729,6 +729,34 @@
       onGenerate();
     },
     render() { render(); },
+    /* Exercício atual em forma de texto para o link: Xcena_a_m_dados_pedido_método_passo */
+    token() {
+      if (!ex || !ex.sol) return null;
+      const r = (v) => String(Math.round(v * 1e6) / 1e6);
+      return 'X' + (ex.scene || 'none') + '_' + r(ex.t.a) + '_' + r(ex.t.m) + '_' + ex.givens.join('') + '_' + ex.target + '_' + cfg.method + '_' + ex.cur;
+    },
+    loadToken(tok) {
+      const mt = /^X([a-z]+)_([\d.]+)_([\d.]+)_([abchmn]+)_([abchmn])_(sim|formula|both)_(\d+)$/.exec(tok || '');
+      if (!mt) return false;
+      const scene = mt[1] === 'none' || RM.scenes.SCENES[mt[1]] ? mt[1] : 'none';
+      const a = parseFloat(mt[2]), m = parseFloat(mt[3]);
+      if (!(a > 0 && m > 0 && m < a)) return false;
+      const givens = mt[4].split('').filter((v, k, arr) => arr.indexOf(v) === k);
+      const target = mt[5];
+      if (givens.includes(target)) return false;
+      const path = solvePath(givens, target, SIM_ORDER);
+      if (!path) return false;
+      cfg.scene = scene;
+      cfg.method = mt[6];
+      VARS.forEach((v) => { delete custom[v]; });
+      givens.forEach((v) => { custom[v] = 'given'; });
+      custom[target] = 'target';
+      load({ t: triFrom(a, m), givens, target, path, scene });
+      ex.cur = RM.clamp(parseInt(mt[7], 10), 0, ex.sol.length - 1);
+      renderSide();
+      showStep(0);
+      return true;
+    },
     next() { go(1); },
     prev() { go(-1); },
   };

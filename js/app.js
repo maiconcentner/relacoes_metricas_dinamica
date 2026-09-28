@@ -79,17 +79,14 @@
   function segSync(id, val) {
     Array.from($(id).querySelectorAll('button')).forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === val));
   }
-  function shareUrl() {
-    const base = location.href.split('#')[0];
-    return base + '#' + RM.encodeHash();
-  }
+  function shareUrl() { return RM.share.url(); }
 
   /* ---------- Painel ---------- */
   function openPanel(open) {
     $('panel').hidden = !open;
     $('scrim').hidden = !open;
     $('btn-panel').setAttribute('aria-expanded', open);
-    if (open) $('panel-close').focus();
+    if (open) { RM.share.refresh(); $('panel-close').focus(); }
   }
 
   function bindPanel() {
@@ -231,6 +228,7 @@
       case 'n': RM.set({ level: s.level === 'ef' ? 'em' : 'ef' }); break;
       case 'f': toggleFullscreen(); break;
       case 'c': RM.exportFig.copyFigure(); break;
+      case 'a': RM.annot.toggle(); break;
       case 'g': figAction(e.shiftKey ? 'rotR' : 'rotL'); break;
       case 'e': figAction('mirror'); break;
       case 'r': figAction('random'); break;
@@ -244,7 +242,12 @@
   function init() {
     RM.loadSaved();
     const fromHash = RM.decodeHash(location.hash);
-    if (fromHash) Object.assign(RM.state, fromHash);
+    let startExercise = null;
+    if (fromHash) {
+      startExercise = fromHash.exercise || null;
+      delete fromHash.exercise;
+      Object.assign(RM.state, fromHash);
+    }
     RM.set({}, { force: true });
 
     document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
@@ -257,10 +260,7 @@
     $('btn-reset-pos').addEventListener('click', () => figAction('reset'));
     bindPanel();
     document.addEventListener('keydown', onKey);
-    window.addEventListener('hashchange', () => {
-      const h = RM.decodeHash(location.hash);
-      if (h) RM.set(h);
-    });
+    window.addEventListener('hashchange', () => { RM.share.applyHash(location.hash.replace(/^#/, '')); });
 
     RM.on(syncUI);
     syncUI();
@@ -269,6 +269,9 @@
     RM.exe.init();
     RM.ded.init();
     RM.exportFig.init();
+    RM.annot.init();
+    RM.share.init();
+    if (startExercise) RM.exe.loadToken(startExercise);
 
     // Em telas estreitas, aumenta as letras das figuras para continuarem legíveis.
     let lastBoost = 0;

@@ -59,6 +59,15 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Nos Exercícios, no passo **Enunciado**, a imagem sai só com os dados e o x, pronta para a lista.
 - Se o navegador não permitir copiar direto, abre uma janela com a imagem para copiar com o botão direito ou baixar em PNG.
 
+### Anotar na tela (Fase 4)
+- Botão **Anotar** (tecla `A`) abre uma barra com **caneta** (vermelha, azul, verde), **marca-texto**, **apontador laser** (rastro que some sozinho), **desfazer** (Ctrl+Z), **apagar tudo** e **mouse** (volta a mexer na figura sem apagar os desenhos; `Esc`).
+- Cada aba tem as suas anotações, que acompanham a figura quando a janela muda de tamanho. As setas e o passador de slides continuam avançando os passos com a caneta ativa.
+
+### Cenários salvos e QR code (Fase 4)
+- No painel do professor, **Cenários salvos** guarda tudo o que está na tela (aba, triângulo, posição, camadas, passo e o exercício inteiro) com um nome, para abrir depois com um clique. Excluir pede um segundo toque. Ficam salvos no navegador.
+- O **link compartilhável** agora também leva o exercício (cena, dados, pedido, método e passo).
+- **Mostrar QR code para a turma** abre um QR grande com esse link, para os alunos abrirem no celular. O endereço usado é o do GitHub Pages (editável em **Endereço do site**).
+
 ### Painel do professor (botão **Professor** ou tecla `P`)
 - Hipotenusa e projeção por controle deslizante ou digitadas; ou definir pelos catetos `b` e `c`.
 - Exemplos prontos (15-20-25, 3-4-5, 6-8-10, 30-40-50, h = 8 exato, isósceles).
@@ -82,6 +91,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 | `0` | voltar à posição padrão |
 | `F` | tela cheia |
 | `C` | copiar a figura como imagem |
+| `A` | anotar na tela |
 | `P` | painel do professor |
 
 ## Como publicar (GitHub Pages, gratuito)
@@ -106,11 +116,14 @@ js/deductions.js    módulo Deduções (cartões e Pitágoras com áreas)
 js/exercise.js      módulo Exercícios (gerador e solucionador)
 js/scenes.js        cenas das aplicações (telhado, torre, praça, escada)
 js/export.js        copiar a figura como imagem PNG
+js/annotate.js      caneta, marca-texto e laser por cima da figura
+js/share.js         link, cenários salvos e QR code
+js/vendor/qrcode.js gerador de QR code (qrcode-generator, licença MIT)
 js/app.js           painel do professor, atalhos, inicialização
 ```
 
-Não há dependências nem etapa de build: HTML, CSS e JavaScript puros.
+Não há etapa de build: HTML, CSS e JavaScript puros. A única biblioteca (gerador de QR code) está incluída no projeto, então tudo funciona sem internet.
 
-## Próximas fases
+## Fases
 
-- **Fase 4**: caneta e laser para anotar na tela, cenários salvos e QR code.
+As quatro fases do plano estão concluídas.

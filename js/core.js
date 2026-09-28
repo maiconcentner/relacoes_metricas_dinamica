@@ -139,6 +139,10 @@
     if (s.unit) parts.push('u' + s.unit);
     const LAYERS = RM.LAYERS;
     parts.push('L' + Object.keys(LAYERS).filter((k) => s[k]).map((k) => LAYERS[k]).join(''), 'V' + s.shown);
+    if (s.view === 'exe' && RM.exe && RM.exe.token) {
+      const tok = RM.exe.token();
+      if (tok) parts.push(tok);
+    }
     parts.push('r' + s.rot, 'f' + (s.mirror ? 1 : 0), { fixo: 'xf', pe: 'xp', base: 'xb' }[s.pose]);
     return parts.join('~');
   };
@@ -148,6 +152,7 @@
     const out = {};
     h.split('~').forEach((tok) => {
       if (['lab', 'sem', 'ded', 'exe'].includes(tok)) out.view = tok;
+      else if (/^X[a-z]+_/.test(tok)) out.exercise = tok;
       else if (/^L[a-z]*$/.test(tok)) Object.keys(RM.LAYERS).forEach((k) => { out[k] = tok.includes(RM.LAYERS[k]); });
       else if (/^V[abchmn]*$/.test(tok)) out.shown = tok.slice(1);
       else if (tok === 'ef' || tok === 'em') out.level = tok;
