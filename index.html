@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Relações Métricas Dinâmicas</title>
+<meta name="description" content="Relações métricas no triângulo retângulo por meio da semelhança de triângulos, de forma visual e interativa.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=STIX+Two+Text:ital,wght@0,500;1,500;1,600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 32" aria-hidden="true">
+        <path d="M3 29 L37 29 L13 5 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+        <path d="M13 5 L13 29" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2.4"/>
+        <path d="M13 25 h4 v4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      </svg>
+      <div>
+        <h1>Relações Métricas Dinâmicas</h1>
+        <p class="brand-sub">Triângulo retângulo e semelhança de triângulos</p>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Módulos">
+      <button class="tab" role="tab" id="tab-lab" data-view="lab">Laboratório</button>
+      <button class="tab" role="tab" id="tab-sem" data-view="sem">Semelhança passo a passo</button>
+    </nav>
+
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Nível">
+        <button id="lvl-ef" data-level="ef" title="Ensino Fundamental">EF</button>
+        <button id="lvl-em" data-level="em" title="Ensino Médio">EM</button>
+      </div>
+      <button class="tool" id="btn-hide" title="Modo mistério: ocultar valores (tecla O)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 20 20 4" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Ocultar valores</span>
+      </button>
+      <button class="tool" id="btn-full" title="Tela cheia (tecla F)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Tela cheia</span>
+      </button>
+      <button class="tool tool-primary" id="btn-panel" title="Painel do professor (tecla P)" aria-controls="panel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="18" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Professor</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ LABORATÓRIO ============ -->
+  <main class="view" id="view-lab" aria-labelledby="tab-lab">
+    <section class="stage-wrap">
+      <svg class="stage" id="lab-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Triângulo retângulo ABC com a altura AH"></svg>
+      <p class="stage-hint">Arraste o vértice <b>A</b> sobre o semicírculo ou o vértice <b>C</b> para mudar a hipotenusa.</p>
+    </section>
+    <aside class="side">
+      <div class="card">
+        <h2>Medidas</h2>
+        <div class="measures" id="lab-measures"></div>
+      </div>
+      <div class="card">
+        <h2>Relações <span class="muted">— toque para destacar</span></h2>
+        <ul class="relations" id="lab-relations"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============ SEMELHANÇA ============ -->
+  <main class="view" id="view-sem" aria-labelledby="tab-sem" hidden>
+    <section class="stage-wrap">
+      <svg class="stage" id="sem-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animação da semelhança entre os triângulos"></svg>
+      <div class="stepper" id="stepper">
+        <button class="step-btn" id="step-prev" aria-label="Passo anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dots" id="step-dots" role="tablist" aria-label="Passos"></div>
+        <button class="step-btn" id="step-play" aria-label="Reproduzir automaticamente">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z" fill="currentColor"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        </button>
+        <button class="step-btn step-next" id="step-next" aria-label="Próximo passo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </section>
+    <aside class="side">
+      <div class="card step-card">
+        <p class="eyebrow" id="step-count"></p>
+        <h2 id="step-title"></h2>
+        <div class="step-body" id="step-body"></div>
+      </div>
+      <div class="card" id="sem-table-card" hidden>
+        <h2>Lados correspondentes</h2>
+        <div class="table-scroll"><table class="ptable" id="sem-table"></table></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============ PAINEL DO PROFESSOR ============ -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="panel" id="panel" aria-label="Painel do professor" hidden>
+    <div class="panel-head">
+      <h2>Painel do professor</h2>
+      <button class="icon-btn" id="panel-close" aria-label="Fechar painel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="panel-body">
+      <section class="pgroup">
+        <h3>Triângulo</h3>
+        <div class="field">
+          <label for="in-a">Hipotenusa <var>a</var></label>
+          <div class="range-row">
+            <input type="range" id="rg-a" min="2" max="60" step="0.5">
+            <input type="number" id="in-a" min="1" max="500" step="any" inputmode="decimal">
+          </div>
+        </div>
+        <div class="field">
+          <label for="in-m">Projeção <var>m</var> (de <var>AB</var> sobre a hipotenusa)</label>
+          <div class="range-row">
+            <input type="range" id="rg-m" min="0.5" max="59.5" step="0.5">
+            <input type="number" id="in-m" min="0.01" step="any" inputmode="decimal">
+          </div>
+        </div>
+        <details class="field">
+          <summary>Definir pelos catetos <var>b</var> e <var>c</var></summary>
+          <div class="cat-row">
+            <label for="in-b"><var>b</var></label><input type="number" id="in-b" min="0.1" step="any" value="20" inputmode="decimal">
+            <label for="in-c"><var>c</var></label><input type="number" id="in-c" min="0.1" step="any" value="15" inputmode="decimal">
+            <button class="btn" id="apply-bc">Aplicar</button>
+          </div>
+        </details>
+        <p class="plabel">Exemplos prontos</p>
+        <div class="presets" id="presets"></div>
+      </section>
+
+      <section class="pgroup">
+        <h3>Números</h3>
+        <div class="field-inline">
+          <span class="flabel">Passo ao arrastar</span>
+          <div class="seg seg-sm" id="seg-snap">
+            <button data-v="0.1">0,1</button><button data-v="0.5">0,5</button><button data-v="1">1</button>
+          </div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Casas decimais</span>
+          <div class="seg seg-sm" id="seg-dec">
+            <button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button>
+          </div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Unidade</span>
+          <div class="seg seg-sm" id="seg-unit">
+            <button data-v="">—</button><button data-v="cm">cm</button><button data-v="m">m</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pgroup">
+        <h3>O que mostrar</h3>
+        <label class="switch"><input type="checkbox" id="ck-hide"><span>Modo mistério (valores ocultos, toque para revelar)</span></label>
+        <label class="switch"><input type="checkbox" id="ck-values"><span>Valores junto às figuras</span></label>
+        <label class="switch"><input type="checkbox" id="ck-angles"><span>Ângulos β e γ</span></label>
+        <label class="switch"><input type="checkbox" id="ck-fill"><span>Colorir os triângulos menores</span></label>
+        <label class="switch"><input type="checkbox" id="ck-arc"><span>Semicírculo (lugar do vértice A)</span></label>
+        <label class="switch"><input type="checkbox" id="ck-grid"><span>Malha quadriculada</span></label>
+      </section>
+
+      <section class="pgroup">
+        <h3>Apresentação</h3>
+        <div class="field-inline">
+          <span class="flabel">Tema</span>
+          <div class="seg seg-sm" id="seg-theme">
+            <button data-v="auto">Auto</button><button data-v="light">Claro</button><button data-v="dark">Escuro</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rg-font">Tamanho do texto</label>
+          <input type="range" id="rg-font" min="0.85" max="1.6" step="0.05">
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Velocidade da animação</span>
+          <div class="seg seg-sm" id="seg-speed">
+            <button data-v="0.5">0,5×</button><button data-v="1">1×</button><button data-v="1.5">1,5×</button><button data-v="2">2×</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pgroup">
+        <h3>Compartilhar com a turma</h3>
+        <p class="note">O link guarda o triângulo, o módulo, o passo e o nível atuais.</p>
+        <div class="share-row">
+          <input type="text" id="share-url" readonly aria-label="Link desta configuração">
+          <button class="btn" id="share-copy">Copiar</button>
+        </div>
+        <p class="note" id="share-msg" aria-live="polite"></p>
+        <button class="btn btn-ghost" id="reset-all">Restaurar padrão</button>
+      </section>
+
+      <section class="pgroup">
+        <h3>Atalhos de teclado</h3>
+        <dl class="keys">
+          <dt><kbd>→</kbd> <kbd>Espaço</kbd></dt><dd>Próximo passo (funciona com passador de slides)</dd>
+          <dt><kbd>←</kbd></dt><dd>Passo anterior</dd>
+          <dt><kbd>L</kbd> <kbd>S</kbd></dt><dd>Laboratório / Semelhança</dd>
+          <dt><kbd>O</kbd></dt><dd>Ocultar ou mostrar valores</dd>
+          <dt><kbd>N</kbd></dt><dd>Trocar nível EF / EM</dd>
+          <dt><kbd>F</kbd></dt><dd>Tela cheia</dd>
+          <dt><kbd>P</kbd></dt><dd>Abrir ou fechar este painel</dd>
+        </dl>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/lab.js"></script>
+<script src="js/similarity.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
