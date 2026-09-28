@@ -230,6 +230,7 @@
       case 'o': RM.set({ hide: !s.hide }); break;
       case 'n': RM.set({ level: s.level === 'ef' ? 'em' : 'ef' }); break;
       case 'f': toggleFullscreen(); break;
+      case 'c': RM.exportFig.copyFigure(); break;
       case 'g': figAction(e.shiftKey ? 'rotR' : 'rotL'); break;
       case 'e': figAction('mirror'); break;
       case 'r': figAction('random'); break;
@@ -267,6 +268,7 @@
     RM.sim.init();
     RM.exe.init();
     RM.ded.init();
+    RM.exportFig.init();
 
     // Em telas estreitas, aumenta as letras das figuras para continuarem legíveis.
     let lastBoost = 0;

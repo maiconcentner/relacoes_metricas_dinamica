@@ -555,6 +555,23 @@ details.card summary { cursor: pointer; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .stage .fade-in { animation: fadeIn 0.7s 0.8s ease both; }
 
+/* ===== Copiar imagem ===== */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: var(--bg);
+  padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.92rem;
+  z-index: 30; box-shadow: 0 8px 24px rgba(8, 16, 24, 0.25);
+}
+.img-dialog {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(720px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  z-index: 22; display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px;
+}
+.img-dialog > .note, .img-dialog > img, .img-dialog > .btn { margin-inline: 16px; }
+.img-dialog img { max-width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.img-dialog .btn { align-self: flex-start; text-decoration: none; }
+
 /* ===== Responsivo ===== */
 @media (max-width: 900px) {
   .view { grid-template-columns: minmax(0, 1fr); }

@@ -54,6 +54,11 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - **Girar antes de espelhar**: só o triângulo grande é espelhado, porque ele é a imagem no espelho dos menores e nenhuma rotação resolve; os outros só giram. Nas comparações de dois triângulos, um deles fica parado (o amarelo, se estiver na comparação; senão, o verde).
 - As reflexões são sempre numa reta **vertical ou horizontal**, fáceis de acompanhar. Os textos dos passos dizem quem espelha, quem gira (quantos graus e em que sentido) e quem fica parado.
 
+### Copiar imagem (listas de exercícios)
+- Botão **Copiar imagem** fixo na barra de cima (tecla `C`): copia a figura que está na tela como PNG, em alta resolução, com fundo branco e cores claras (mesmo no tema escuro) e recorte justo. É só colar (Ctrl+V) no Word, Google Docs ou slides.
+- Nos Exercícios, no passo **Enunciado**, a imagem sai só com os dados e o x, pronta para a lista.
+- Se o navegador não permitir copiar direto, abre uma janela com a imagem para copiar com o botão direito ou baixar em PNG.
+
 ### Painel do professor (botão **Professor** ou tecla `P`)
 - Hipotenusa e projeção por controle deslizante ou digitadas; ou definir pelos catetos `b` e `c`.
 - Exemplos prontos (15-20-25, 3-4-5, 6-8-10, 30-40-50, h = 8 exato, isósceles).
@@ -76,6 +81,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 | `R` | sortear uma posição |
 | `0` | voltar à posição padrão |
 | `F` | tela cheia |
+| `C` | copiar a figura como imagem |
 | `P` | painel do professor |
 
 ## Como publicar (GitHub Pages, gratuito)
@@ -99,6 +105,7 @@ js/similarity.js    módulo Semelhança passo a passo (e mini-animações)
 js/deductions.js    módulo Deduções (cartões e Pitágoras com áreas)
 js/exercise.js      módulo Exercícios (gerador e solucionador)
 js/scenes.js        cenas das aplicações (telhado, torre, praça, escada)
+js/export.js        copiar a figura como imagem PNG
 js/app.js           painel do professor, atalhos, inicialização
 ```
 

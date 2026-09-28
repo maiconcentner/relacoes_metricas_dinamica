@@ -215,7 +215,7 @@
     const st2 = RM.state;
     if (st2.rot !== 0 || st2.mirror || (drag && drag.which === 'rot')) {
       const txt = 'Girado ' + RM.fmt(st2.rot, 0) + '°' + (st2.mirror ? ' · espelhado' : '');
-      out += '<text x="20" y="' + D.fs(26) + '" class="badge" font-size="' + D.fs(20) + '">' + txt + '</text>';
+      out += '<text x="20" y="' + D.fs(26) + '" class="badge" data-noexport font-size="' + D.fs(20) + '">' + txt + '</text>';
     }
 
     // Alças de arraste

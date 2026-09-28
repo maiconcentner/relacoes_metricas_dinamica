@@ -46,6 +46,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16h8l-8-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
         <span>Posição padrão</span>
       </button>
+      <button class="tool" id="btn-copy-img" title="Copiar a figura como imagem, para colar em listas de exercícios (tecla C)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m5 16 4-4 3 3 2-2 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Copiar imagem</span>
+      </button>
       <button class="tool" id="btn-full" title="Tela cheia (tecla F)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Tela cheia</span>
@@ -304,6 +308,18 @@
 
   <!-- ============ PAINEL DO PROFESSOR ============ -->
   <div class="scrim" id="scrim" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="img-dialog" id="img-dialog" role="dialog" aria-label="Imagem da figura" hidden>
+    <div class="panel-head">
+      <h2>Imagem da figura</h2>
+      <button class="icon-btn" id="img-close" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="note">O navegador não deixou copiar direto. Clique com o botão direito na imagem (ou segure, no celular) e escolha <b>Copiar imagem</b>, ou baixe o arquivo.</p>
+    <img id="img-preview" alt="Figura exportada">
+    <a class="btn" id="img-download" href="#">Baixar PNG</a>
+  </div>
   <aside class="panel" id="panel" aria-label="Painel do professor" hidden>
     <div class="panel-head">
       <h2>Painel do professor</h2>
@@ -430,6 +446,7 @@
           <dt><kbd>R</kbd></dt><dd>Sortear uma posição</dd>
           <dt><kbd>0</kbd></dt><dd>Voltar a figura à posição padrão</dd>
           <dt><kbd>F</kbd></dt><dd>Tela cheia</dd>
+          <dt><kbd>C</kbd></dt><dd>Copiar a figura como imagem</dd>
           <dt><kbd>P</kbd></dt><dd>Abrir ou fechar este painel</dd>
         </dl>
       </section>
@@ -444,6 +461,7 @@
 <script src="js/deductions.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/exercise.js"></script>
+<script src="js/export.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
