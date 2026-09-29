@@ -531,6 +531,10 @@
     els.randPos.checked = cfg.randPos;
     document.querySelectorAll('#ex-method button').forEach((b) => b.setAttribute('aria-pressed', cfg.method === b.dataset.v));
     document.querySelectorAll('#ex-scene [data-scene]').forEach((b) => b.setAttribute('aria-pressed', cfg.scene === b.dataset.scene));
+    const locked = !!sceneOf(ex);
+    document.querySelectorAll('#view-exe .fb[data-act]').forEach((b) => { b.disabled = locked; });
+    document.getElementById('ex-lock').hidden = !locked;
+    els.randPos.disabled = locked;
     document.querySelectorAll('[data-exlayer]').forEach((b) => b.setAttribute('aria-pressed', layers[b.dataset.exlayer]));
     els.custom.querySelectorAll('[data-cv]').forEach((b) => {
       const v = b.dataset.cv, role = b.dataset.role;
@@ -720,6 +724,15 @@
       });
 
       RM.on((changed) => {
+        // Com uma cena, a figura fica na posição real: girar/espelhar não vira a casa de lado
+        const sc = sceneOf(ex);
+        if (sc && ex.t && RM.state.view === 'exe' && ['rot', 'mirror', 'view'].some((k) => changed.includes(k))) {
+          const o = sc.orient(ex.t);
+          if (Math.abs(RM.normDeg(o.rot - RM.state.rot)) > 0.5 || RM.state.mirror !== o.mirror) {
+            RM.set({ rot: o.rot, mirror: o.mirror });
+            return;
+          }
+        }
         if (['rot', 'mirror', 'pose'].some((k) => changed.includes(k))) rebuild();
         if (['rot', 'mirror', 'pose', 'font', 'unit', 'dec'].some((k) => changed.includes(k))) { render(); renderSide(); }
       });

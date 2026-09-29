@@ -32,6 +32,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Botão **▶** para reproduzir a dedução inteira sozinha.
 
 ### Exercícios e aplicações (Fase 3)
+- **Decompor** (Amarelo fixo, Em pé ou Hipotenusa na base) escolhe só a posição em que os triângulos terminam na decomposição; a figura do exercício não muda.
+- Com uma cena (telhado, torre, praça, escada), a figura fica **travada na posição real**: os botões de girar e espelhar ficam desativados e nenhum atalho vira a cena.
 - Nas cenas, o triângulo é **desenhado aos poucos** sobre a situação; depois a cena se dissolve e os triângulos ficam exatamente no mesmo lugar antes de começarem os movimentos.
 - **Contexto**: sem contexto, **Telhado** (caibros, viga e pontalete), **Torre com cabos**, **Praça** (caminho mais curto até a avenida) ou **Escada com escora**. A cena aparece desenhada, o enunciado usa as palavras da situação e o primeiro passo é encontrar o triângulo retângulo escondido nela. As medidas ficam realistas para cada situação.
 - **Gerar exercício**: escolha o **foco** (as relações que devem aparecer), o número de **passos** (1 a 3) e **números inteiros ou decimais**. Opcionalmente, a figura aparece em posição aleatória.
