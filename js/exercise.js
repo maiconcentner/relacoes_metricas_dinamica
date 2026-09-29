@@ -175,6 +175,7 @@
     const sym = (v) => (v === e.target ? '<b>x</b>' : i(v));
     const val = (v) => (known.has(v) ? F(t[v]) : sym(v));
     const steps = [];
+    let lastKeys = null; // triângulos da última decomposição (voltam para o lugar na resposta)
 
     const giv = e.givens.map((v) => i(v) + ' = ' + SEG[v] + ' = ' + F(t[v]));
     steps.push({
@@ -200,6 +201,7 @@
         const r2 = RM.sim.ROWS.find((r) => r.name === rel.rows[1]);
         const [c1, c2] = rel.cols;
         const keys = [r1.key, r2.key];
+        if (cfg.method !== 'formula') lastKeys = keys;
         const common = keys.includes('big') ? (keys.includes('p1') ? 'o ângulo <span class="c-beta">β</span>' : 'o ângulo <span class="c-gamma">γ</span>')
           : 'os ângulos <span class="c-beta">β</span> e <span class="c-gamma">γ</span>';
         const formula = FOCUS.find((f) => f.id === s.rel).html;
@@ -295,43 +297,64 @@
         }
         known.add(x); found.push(x);
       } else if (R.kind === 'sum') {
-        let calc;
-        if (x === 'a') calc = ml(sym('a') + ' = ' + i('m') + ' + ' + i('n') + ' = ' + F(t.m) + ' + ' + F(t.n) + ' = <span class="result">' + F(t.a) + '</span>');
-        else {
-          const o = x === 'm' ? 'n' : 'm';
-          calc = ml(i('a') + ' = ' + i('m') + ' + ' + i('n')) +
-            ml(F(t.a) + ' = ' + (x === 'm' ? sym('m') + ' + ' + F(t.n) : F(t.m) + ' + ' + sym('n'))) +
-            ml(sym(x) + ' = ' + F(t.a) + ' − ' + F(t[o]) + ' = <span class="result">' + F(t[x]) + '</span>');
-        }
-        known.add(x); found.push(x);
+        // Passo 1: identificar e montar; passo 2: calcular
+        const o = x === 'm' ? 'n' : 'm';
+        const setup = ml(i('a') + ' = ' + i('m') + ' + ' + i('n')) +
+          (x === 'a' ? ml(sym('a') + ' = ' + F(t.m) + ' + ' + F(t.n))
+            : ml(F(t.a) + ' = ' + (x === 'm' ? sym('m') + ' + ' + F(t.n) : F(t.m) + ' + ' + sym('n'))));
+        const calc = x === 'a'
+          ? ml(sym('a') + ' = ' + F(t.m) + ' + ' + F(t.n) + ' = <span class="result">' + F(t.a) + '</span>')
+          : ml(sym(x) + ' = ' + F(t.a) + ' − ' + F(t[o]) + ' = <span class="result">' + F(t[x]) + '</span>');
+        const hlSum = [['m', 'hl2'], ['n', 'hl2'], ['a', 'hl1']];
         steps.push({
           title: pre + 'A hipotenusa é a soma das projeções',
-          html: '<p>A altura divide a hipotenusa em duas partes, ' + i('m') + ' e ' + i('n') + ':</p>' + calc,
-          fig: { hl: [['m', 'hl2'], ['n', 'hl2'], ['a', 'hl1'], [x, 'ok']] },
+          html: '<p>A altura divide a hipotenusa ' + i('a') + ' em duas partes, ' + i('m') + ' e ' + i('n') + '. Substituímos os valores:</p>' + setup,
+          fig: { hl: hlSum },
+          found: found.slice(),
+        });
+        known.add(x); found.push(x);
+        steps.push({
+          title: pre + 'Calculando ' + (x === e.target ? 'x' : x),
+          html: setup + calc,
+          fig: { hl: hlSum.concat([[x, 'ok']]) },
           found: found.slice(),
         });
       } else {
+        // Passo 1: qual triângulo; passo 2: montar e substituir; passo 3: calcular
         const H = R.hyp, [l1, l2] = R.legs;
-        let calc;
+        const tri = '<b class="' + TRI_CLASS[R.tri] + '">' + TRI_NAME[R.tri] + '</b>';
+        const hlPit = [[l1, 'hl2'], [l2, 'hl2'], [H, 'hl1']];
+        let setup, calc;
         if (x === H) {
           const s2 = t[l1] * t[l1] + t[l2] * t[l2];
-          calc = ml(sym(H) + '² = ' + i(l1) + '² + ' + i(l2) + '²') +
-            ml(sym(H) + '² = ' + F(t[l1]) + '² + ' + F(t[l2]) + '² = ' + F(t[l1] * t[l1]) + ' + ' + F(t[l2] * t[l2]) + ' = ' + F(s2)) +
+          setup = ml(sym(H) + '² = ' + i(l1) + '² + ' + i(l2) + '²') + ml(sym(H) + '² = ' + F(t[l1]) + '² + ' + F(t[l2]) + '²');
+          calc = ml(sym(H) + '² = ' + F(t[l1] * t[l1]) + ' + ' + F(t[l2] * t[l2]) + ' = ' + F(s2)) +
             ml(sym(H) + ' = √' + F(s2) + ' = <span class="result">' + F(t[H]) + '</span>');
         } else {
           const o = x === l1 ? l2 : l1;
           const s2 = t[H] * t[H] - t[o] * t[o];
-          calc = ml(i(H) + '² = ' + i(l1) + '² + ' + i(l2) + '²') +
-            ml(F(t[H]) + '² = ' + sym(x) + '² + ' + F(t[o]) + '²') +
-            ml(sym(x) + '² = ' + F(t[H] * t[H]) + ' − ' + F(t[o] * t[o]) + ' = ' + F(s2)) +
+          setup = ml(i(H) + '² = ' + i(l1) + '² + ' + i(l2) + '²') + ml(F(t[H]) + '² = ' + sym(x) + '² + ' + F(t[o]) + '²');
+          calc = ml(sym(x) + '² = ' + F(t[H] * t[H]) + ' − ' + F(t[o] * t[o]) + ' = ' + F(s2)) +
             ml(sym(x) + ' = √' + F(s2) + ' = <span class="result">' + F(t[x]) + '</span>');
         }
+        steps.push({
+          title: pre + 'Qual triângulo retângulo usar?',
+          html: '<p>As medidas ' + listAnd([H, l1, l2].map((v) => sym(v))) + ' são os três lados do triângulo retângulo ' + tri + ' (o ' + TRI_COLOR[R.tri] + ').</p>' +
+            '<p>Nele, a <span class="c-hl1">hipotenusa</span> é ' + sym(H) + ' e os <span class="c-hl2">catetos</span> são ' + sym(l1) + ' e ' + sym(l2) + '.</p>',
+          fig: { fill: [R.tri], hl: hlPit },
+          found: found.slice(),
+        });
+        steps.push({
+          title: pre + 'Aplicando Pitágoras no ' + TRI_NAME[R.tri],
+          html: '<p>O quadrado da hipotenusa é a soma dos quadrados dos catetos. Substituímos os valores:</p>' + setup,
+          fig: { fill: [R.tri], hl: hlPit },
+          found: found.slice(),
+        });
         known.add(x); found.push(x);
         steps.push({
-          title: pre + 'Pitágoras no ' + TRI_NAME[R.tri],
-          html: '<p>No triângulo retângulo <b class="' + TRI_CLASS[R.tri] + '">' + TRI_NAME[R.tri] + '</b> (o ' + TRI_COLOR[R.tri] +
-            '), a hipotenusa é ' + i(H) + ' e os catetos são ' + i(l1) + ' e ' + i(l2) + ':</p>' + calc,
-          fig: { fill: [R.tri], hl: [[l1, 'hl2'], [l2, 'hl2'], [H, 'hl1'], [x, 'ok']] },
+          title: pre + 'Calculando ' + (x === e.target ? 'x' : x),
+          html: setup + calc,
+          fig: { fill: [R.tri], hl: hlPit.concat([[x, 'ok']]) },
           found: found.slice(),
         });
       }
@@ -351,6 +374,16 @@
         }).join(' → ') + '.</p>',
       fig: { hl: [[e.target, 'ok']] },
       found: found.slice(),
+      // Os triângulos voltam, com todos os valores, para a posição inicial da figura
+      move: !!lastKeys,
+      home: lastKeys ? {
+        keys: lastKeys,
+        label: (key, side) => {
+          if (side === e.target) return { txt: 'x = ' + F(t[side]), color: 'var(--ok)' };
+          if (known.has(side)) return { txt: F(t[side]) };
+          return { txt: side, color: 'var(--muted)' };
+        },
+      } : null,
     });
     return steps;
   }
@@ -384,9 +417,47 @@
 
   /* Passos de semelhança usam a mini-animação; os outros, a figura do exercício. */
   function render() { showStep(0); }
+  let homeToken = 0;
   function showStep(dir) {
+    homeToken++;
     if (!ex || !ex.sol) { if (mini) mini.stop(); els.fig.innerHTML = ''; els.miniG.innerHTML = ''; return; }
     const st = ex.sol[ex.cur];
+    if (st && st.home && dir === 1 && mini) {
+      // Resposta: os triângulos alinhados voltam deslizando e girando para o lugar original,
+      // e só então a figura (com a cena) reaparece por baixo
+      const FP0 = figTransform(ex.t);
+      const anchor0 = { k: Math.hypot(FP0.C[0] - FP0.B[0], FP0.C[1] - FP0.B[1]) / ex.t.a, B: FP0.B, C: FP0.C };
+      const aligned = {}, inplace = {};
+      st.home.keys.forEach((k) => { aligned[k] = 'rot'; inplace[k] = 'inplace'; });
+      const o = { t: ex.t, label: st.home.label, anchor: anchor0, dedupe: true };
+      mini.show(o, st.home.keys, aligned, 0);
+      els.fig.style.opacity = 0;
+      els.miniG.style.opacity = 1;
+      const my = homeToken;
+      const sp = RM.state.speed || 1;
+      // Desfaz os movimentos na ordem inversa, um de cada vez, e então volta ao lugar
+      const seq = mini.seq(ex.t, st.home.keys).slice(0, -1);
+      const back = [];
+      for (let k = seq.length - 2; k >= 0; k--) {
+        const undone = seq[k + 1].move;
+        back.push({ phases: seq[k].phases, mirrorKey: undone && undone.type === 'flip' ? undone.key : null });
+      }
+      back.push({ phases: inplace, mirrorKey: null });
+      let idx = 0;
+      const nextBack = () => {
+        if (my !== homeToken) return;
+        if (idx >= back.length) {
+          renderFig({});
+          els.fig.style.opacity = 1;
+          els.miniG.style.opacity = 0;
+          return;
+        }
+        const it = back[idx++];
+        mini.show(Object.assign({}, o, { mirrorKey: it.mirrorKey }), st.home.keys, it.phases, 850 / sp, () => setTimeout(nextBack, 200 / sp));
+      };
+      setTimeout(nextBack, 450 / sp);
+      return;
+    }
     if (!st || !st.mini) {
       // Volta para a figura (com a cena): dissolve a animação e mostra a figura
       if (mini) mini.stop();
@@ -406,6 +477,17 @@
     const prev = ex.sol[ex.cur - dir];
     const same = prev && prev.mini && prev.mini.keys.join() === m.keys.join();
     const dur = Math.abs(dir) === 1 && same ? 900 / (RM.state.speed || 1) : 0;
+    if (Math.abs(dir) === 1 && prev && prev.mini && !same) {
+      // Troca de relação: os triângulos anteriores somem e os novos aparecem no lugar, dissolvendo
+      const my = homeToken;
+      els.miniG.style.opacity = 0;
+      setTimeout(() => {
+        if (my !== homeToken) return;
+        mini.show(o, m.keys, m.phases, 0);
+        els.miniG.style.opacity = 1;
+      }, 420);
+      return;
+    }
     mini.show(o, m.keys, m.phases, dur);
   }
 
@@ -437,7 +519,7 @@
     let out = '';
     const sc = sceneOf(ex);
     // Depois de encontrado o triângulo, a cena fica mais clara para ele se destacar
-    if (sc) out += '<g class="scene' + (animIn ? ' scene-dim-in' : '') + '" style="opacity:' + (ex.cur >= 1 ? 0.55 : 1) + '">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
+    if (sc) out += '<g class="scene' + (animIn ? ' scene-dim-in' : '') + '" style="opacity:' + (ex.cur >= 1 && ex.cur < ex.sol.length - 1 ? 0.55 : 1) + '">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
     const drawIn = animIn ? ' pathLength="1" class="draw-in"' : '';
     // Na cena, o triângulo aparece discreto até ser "encontrado" (passo 1)
     const hidden = sc && ex.cur === 0;

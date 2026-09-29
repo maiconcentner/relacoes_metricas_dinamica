@@ -43,6 +43,8 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
   - quais triângulos comparar; depois a própria figura separa os dois e os alinha, **um movimento por clique**, com os dados e o x nos lados;
   - a proporção, com os lados correspondentes destacados;
   - a conta (multiplicação cruzada) e o valor encontrado, que aparece na figura.
+  - Pitágoras e a soma das projeções também vão por partes: qual triângulo usar, montar e substituir, calcular;
+  - na **Resposta**, os triângulos desfazem os movimentos, um de cada vez, e voltam para o lugar na figura (ou na cena), já com o valor encontrado.
 - Botão para copiar o enunciado.
 
 ### Posição da figura

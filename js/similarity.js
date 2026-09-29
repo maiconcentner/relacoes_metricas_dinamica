@@ -848,7 +848,7 @@
         out += D.angleArc(v[r.gamma], v[oth(r.gamma)[0]], v[oth(r.gamma)[1]], 32, 'var(--gamma)', 'γ', D.fs(22));
         out += D.rightMark(v[r.right], v[oth(r.right)[0]], v[oth(r.right)[1]], 12, 'var(--ink)');
         const G = centroid(v);
-        const dedupe = !!opts.ghost;
+        const dedupe = !!(opts.ghost || opts.dedupe);
         pc.names.forEach((n) => {
           if (dedupe && seenV.has(n)) return;
           seenV.add(n);
@@ -901,10 +901,10 @@
 
     return {
       /* Vai direto (ou com uma transição) para uma arrumação. */
-      show(o, keys, phases, dur) {
+      show(o, keys, phases, dur, done) {
         token++;
         opts = Object.assign({}, o);
-        tweenTo(miniLayout(o.t, keys, phases, o.anchor), dur || 0);
+        tweenTo(miniLayout(o.t, keys, phases, o.anchor), dur || 0, done);
       },
       /* Alinha as peças, um movimento por vez. onMove(move) é chamado a cada movimento. */
       align(o, keys, onMove) {
