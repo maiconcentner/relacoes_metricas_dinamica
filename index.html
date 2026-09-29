@@ -29,6 +29,8 @@
     <nav class="tabs" role="tablist" aria-label="Módulos">
       <button class="tab" role="tab" id="tab-lab" data-view="lab">Laboratório</button>
       <button class="tab" role="tab" id="tab-sem" data-view="sem">Semelhança passo a passo</button>
+      <button class="tab" role="tab" id="tab-ded" data-view="ded">Deduções</button>
+      <button class="tab" role="tab" id="tab-exe" data-view="exe">Exercícios</button>
     </nav>
 
     <div class="tools">
@@ -39,6 +41,18 @@
       <button class="tool" id="btn-hide" title="Modo mistério: ocultar valores (tecla O)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 20 20 4" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Ocultar valores</span>
+      </button>
+      <button class="tool" id="btn-reset-pos" title="Voltar a figura à posição padrão (tecla 0)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16h8l-8-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Posição padrão</span>
+      </button>
+      <button class="tool" id="btn-copy-img" title="Copiar a figura como imagem, para colar em listas de exercícios (tecla C)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m5 16 4-4 3 3 2-2 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <span>Copiar imagem</span>
+      </button>
+      <button class="tool" id="btn-annot" title="Anotar na tela: caneta, marca-texto e laser (tecla A)" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 4.5 5 5L9 20H4v-5L14.5 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12.5 6.5 5 5" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Anotar</span>
       </button>
       <button class="tool" id="btn-full" title="Tela cheia (tecla F)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -54,8 +68,43 @@
   <!-- ============ LABORATÓRIO ============ -->
   <main class="view" id="view-lab" aria-labelledby="tab-lab">
     <section class="stage-wrap">
+      <div class="figbar" role="toolbar" aria-label="Posição da figura">
+        <div class="fb-group">
+          <button class="fb" data-act="rotL" title="Girar 15° no sentido anti-horário (G)" aria-label="Girar 15° no sentido anti-horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="rotR" title="Girar 15° no sentido horário" aria-label="Girar 15° no sentido horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="mirror" title="Espelhar a figura (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.5 2.5"/><path d="M9 7 3 18h6Z M15 7l6 11h-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span>Espelhar</span>
+          </button>
+          <button class="fb" data-act="stand" title="Deixar a figura em pé: ângulo reto embaixo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16h14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 16h4v4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>Em pé</span>
+          </button>
+          <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
+            <span>Sortear posição</span>
+          </button>
+        </div>
+      </div>
+      <div class="layerbar" role="group" aria-label="Mostrar na figura">
+        <span class="fb-label">Mostrar</span>
+        <button class="chip" data-layer="alt">Altura</button>
+        <button class="chip" data-layer="names">Nomes</button>
+        <button class="chip" data-layer="values">Valores</button>
+        <button class="chip" data-layer="angles">Ângulos</button>
+        <button class="chip" data-layer="fill">Cores</button>
+        <button class="chip" data-layer="arc">Semicírculo</button>
+        <button class="chip" data-layer="grid">Malha</button>
+        <span class="chip-sep" aria-hidden="true"></span>
+        <button class="chip chip-ghost" data-layers="all">Tudo</button>
+        <button class="chip chip-ghost" data-layers="none">Só o triângulo</button>
+      </div>
       <svg class="stage" id="lab-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Triângulo retângulo ABC com a altura AH"></svg>
-      <p class="stage-hint">Arraste o vértice <b>A</b> sobre o semicírculo ou o vértice <b>C</b> para mudar a hipotenusa.</p>
+      <p class="stage-hint">Arraste o vértice <b>A</b> sobre o semicírculo ou o vértice <b>C</b> para mudar o triângulo. Arraste em qualquer outro ponto da figura para <b>girá-la</b>.</p>
     </section>
     <aside class="side">
       <div class="card">
@@ -72,6 +121,36 @@
   <!-- ============ SEMELHANÇA ============ -->
   <main class="view" id="view-sem" aria-labelledby="tab-sem" hidden>
     <section class="stage-wrap">
+      <div class="figbar" role="toolbar" aria-label="Posição da figura">
+        <div class="fb-group">
+          <button class="fb" data-act="rotL" title="Girar 15° no sentido anti-horário (G)" aria-label="Girar 15° no sentido anti-horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="rotR" title="Girar 15° no sentido horário" aria-label="Girar 15° no sentido horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="mirror" title="Espelhar a figura (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.5 2.5"/><path d="M9 7 3 18h6Z M15 7l6 11h-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span>Espelhar</span>
+          </button>
+          <button class="fb" data-act="stand" title="Deixar a figura em pé: ângulo reto embaixo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16h14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 16h4v4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>Em pé</span>
+          </button>
+          <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
+            <span>Sortear posição</span>
+          </button>
+        </div>
+        <div class="fb-group">
+          <span class="fb-label">Comparar</span>
+          <div class="seg seg-sm" role="group" aria-label="Posição para comparar os triângulos">
+            <button data-pose="fixo" title="O amarelo fica parado; cada triângulo faz no máximo um movimento">Amarelo fixo</button>
+            <button data-pose="pe" title="Ângulo reto embaixo, hipotenusa na diagonal">Em pé</button>
+            <button data-pose="base" title="Hipotenusa na horizontal, ângulo reto em cima">Hipotenusa na base</button>
+          </div>
+        </div>
+      </div>
       <svg class="stage" id="sem-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animação da semelhança entre os triângulos"></svg>
       <div class="stepper" id="stepper">
         <button class="step-btn" id="step-prev" aria-label="Passo anterior">
@@ -100,8 +179,197 @@
     </aside>
   </main>
 
+  <!-- ============ DEDUÇÕES ============ -->
+  <main class="view" id="view-ded" aria-labelledby="tab-ded" hidden>
+    <section class="stage-wrap">
+      <svg class="stage" id="ded-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Animação da dedução"></svg>
+      <div class="stepper">
+        <button class="step-btn" id="ded-prev" aria-label="Passo anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dots" id="ded-dots"></div>
+        <button class="btn btn-ghost replay" id="ded-replay" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rever movimento
+        </button>
+        
+        <button class="step-btn" id="ded-play" aria-label="Reproduzir automaticamente">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7Z" fill="currentColor"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+        </button>
+        <button class="step-btn step-next" id="ded-next" aria-label="Próximo passo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="ex-step">
+        <p class="eyebrow" id="ded-count"></p>
+        <h2 id="ded-title"></h2>
+        <div class="step-body" id="ded-body"></div>
+      </div>
+    </section>
+    <aside class="side">
+      <div class="card">
+        <h2>Relações</h2>
+        <p class="note">Escolha uma relação para ver de onde ela vem.</p>
+        <div class="ded-list" id="ded-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============ EXERCÍCIOS ============ -->
+  <main class="view" id="view-exe" aria-labelledby="tab-exe" hidden>
+    <section class="stage-wrap">
+      <div class="figbar" role="toolbar" aria-label="Posição da figura">
+        <div class="fb-group">
+          <button class="fb" data-act="rotL" title="Girar 15° no sentido anti-horário (G)" aria-label="Girar 15° no sentido anti-horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="rotR" title="Girar 15° no sentido horário" aria-label="Girar 15° no sentido horário">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="fb" data-act="mirror" title="Espelhar a figura (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.5 2.5"/><path d="M9 7 3 18h6Z M15 7l6 11h-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            <span>Espelhar</span>
+          </button>
+          <button class="fb" data-act="stand" title="Deixar a figura em pé: ângulo reto embaixo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16h14Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 16h4v4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            <span>Em pé</span>
+          </button>
+          <button class="fb" data-act="random" title="Sortear uma posição qualquer (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
+            <span>Sortear posição</span>
+          </button>
+        </div>
+        <p class="fb-lock" id="ex-lock" hidden>Na cena, a figura fica na posição real.</p>
+        <div class="fb-group">
+          <span class="fb-label">Decompor</span>
+          <div class="seg seg-sm" role="group" aria-label="Posição dos triângulos na decomposição">
+            <button data-pose="fixo" title="O amarelo fica parado; cada triângulo faz o mínimo de movimentos">Amarelo fixo</button>
+            <button data-pose="pe" title="Na decomposição, os triângulos terminam em pé: ângulo reto embaixo, hipotenusa na diagonal">Em pé</button>
+            <button data-pose="base" title="Na decomposição, os triângulos terminam com a hipotenusa na horizontal">Hipotenusa na base</button>
+          </div>
+        </div>
+      </div>
+      <div class="layerbar" role="group" aria-label="Mostrar na figura do exercício">
+        <span class="fb-label">Mostrar</span>
+        <button class="chip" data-exlayer="names">Nomes</button>
+        <button class="chip" data-exlayer="angles">Ângulos</button>
+        <button class="chip" data-exlayer="fill">Cores</button>
+      </div>
+      <svg class="stage" id="exe-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Figura do exercício"><g id="exe-fig" class="xfade"></g><g id="exe-mini" class="xfade" style="opacity:0"></g></svg>
+      <div class="stepper">
+        <button class="step-btn" id="ex-prev" aria-label="Passo anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="dots" id="ex-dots"></div>
+        <button class="btn btn-ghost replay" id="ex-replay" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rever movimento
+        </button>
+        <button class="btn btn-ghost" id="ex-restart">Recomeçar</button>
+        <button class="btn btn-ghost" id="ex-all">Mostrar tudo</button>
+        <button class="step-btn step-next" id="ex-next" aria-label="Próximo passo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="ex-step">
+        <p class="eyebrow" id="ex-step-count"></p>
+        <h2 id="ex-step-title"></h2>
+        <div class="step-body" id="ex-step-body"></div>
+      </div>
+    </section>
+    <aside class="side">
+      <div class="card">
+        <h2>Enunciado</h2>
+        <div id="ex-statement" class="step-body"></div>
+        <div class="share-row" style="margin-top:8px"><span class="note" id="ex-copy-msg" aria-live="polite"></span><button class="btn btn-ghost" id="ex-copy">Copiar enunciado</button></div>
+      </div>
+      <div class="card">
+        <h2>Gerar exercício</h2>
+        <p class="plabel">Contexto <span class="muted">— situação do dia a dia</span></p>
+        <div class="chips" id="ex-scene"></div>
+        <p class="plabel">Foco <span class="muted">— relações que devem aparecer</span></p>
+        <div class="chips" id="ex-focus"></div>
+        <div class="field-inline">
+          <span class="flabel">Passos</span>
+          <div class="seg seg-sm" id="ex-steps"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button></div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Números</span>
+          <div class="seg seg-sm" id="ex-nums"><button data-v="int">Inteiros</button><button data-v="dec">Decimais</button></div>
+        </div>
+        <div class="field-inline">
+          <span class="flabel">Resolver por</span>
+          <div class="seg seg-sm" id="ex-method"><button data-v="sim">Semelhança</button><button data-v="formula">Fórmula</button><button data-v="both">As duas</button></div>
+        </div>
+        <label class="switch"><input type="checkbox" id="ex-randpos"><span>Figura em posição aleatória</span></label>
+        <button class="btn" id="ex-generate">Gerar exercício</button>
+        <p class="note" id="ex-msg" aria-live="polite"></p>
+      </div>
+      <details class="card">
+        <summary><b>Montar o meu exercício</b></summary>
+        <p class="note">Escolha os dados e a medida pedida. Usa o triângulo do exercício atual.</p>
+        <div id="ex-custom" class="cv-list"></div>
+        <div class="share-row">
+          <button class="btn btn-ghost" id="ex-use-lab">Usar o triângulo do Laboratório</button>
+          <button class="btn" id="ex-apply">Resolver este</button>
+        </div>
+        <p class="note" id="ex-cmsg" aria-live="polite"></p>
+      </details>
+    </aside>
+  </main>
+
   <!-- ============ PAINEL DO PROFESSOR ============ -->
   <div class="scrim" id="scrim" hidden></div>
+  <div class="img-dialog qr-dialog" id="qr-dialog" role="dialog" aria-label="QR code para a turma" hidden>
+    <div class="panel-head">
+      <h2>Aponte a câmera do celular</h2>
+      <button class="icon-btn" id="qr-close" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="qr-box" id="qr-box"></div>
+    <p class="qr-url" id="qr-url"></p>
+  </div>
+  <div class="annot-bar" id="annot-bar" role="toolbar" aria-label="Anotar na tela" hidden>
+    <button class="ab" data-atool="none" title="Mouse: mexer na figura sem apagar as anotações (Esc)" aria-label="Mouse">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3l12 9-5.5 1L10 19Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="ab" data-atool="pen" title="Caneta" aria-label="Caneta">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 4.5 5 5L9 20H4v-5L14.5 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="dotc" data-acolor="red" style="--c:#e03131" aria-label="Caneta vermelha"></button>
+    <button class="dotc" data-acolor="blue" style="--c:#1c7ed6" aria-label="Caneta azul"></button>
+    <button class="dotc" data-acolor="green" style="--c:#2f9e44" aria-label="Caneta verde"></button>
+    <button class="ab" data-atool="hl" title="Marca-texto" aria-label="Marca-texto">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16" stroke="#e0b100" stroke-width="3.5" stroke-linecap="round"/><path d="m13 4 5 5-7 7H6v-5l7-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="ab" data-atool="laser" title="Apontador laser" aria-label="Apontador laser">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5" fill="#e03131"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="#e03131" stroke-width="1.4" opacity=".6"/></svg>
+    </button>
+    <span class="chip-sep" aria-hidden="true"></span>
+    <button class="ab" id="annot-undo" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12h10a6 6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" transform="translate(0 -4)"/></svg>
+    </button>
+    <button class="ab" id="annot-clear" title="Apagar tudo desta aba" aria-label="Apagar tudo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="ab" id="annot-close" title="Fechar a barra de anotação" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="img-dialog" id="img-dialog" role="dialog" aria-label="Imagem da figura" hidden>
+    <div class="panel-head">
+      <h2>Imagem da figura</h2>
+      <button class="icon-btn" id="img-close" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="note">O navegador não deixou copiar direto. Clique com o botão direito na imagem (ou segure, no celular) e escolha <b>Copiar imagem</b>, ou baixe o arquivo.</p>
+    <img id="img-preview" alt="Figura exportada">
+    <a class="btn" id="img-download" href="#">Baixar PNG</a>
+  </div>
   <aside class="panel" id="panel" aria-label="Painel do professor" hidden>
     <div class="panel-head">
       <h2>Painel do professor</h2>
@@ -135,6 +403,17 @@
             <button class="btn" id="apply-bc">Aplicar</button>
           </div>
         </details>
+        <div class="field">
+          <label for="rg-rot">Rotação da figura: <span id="rot-val">0°</span></label>
+          <input type="range" id="rg-rot" min="-180" max="180" step="1">
+        </div>
+        <label class="switch"><input type="checkbox" id="ck-mirror"><span>Espelhar a figura</span></label>
+        <div class="field-inline">
+          <span class="flabel">Comparar os triângulos</span>
+          <div class="seg seg-sm" id="seg-pose">
+            <button data-v="fixo">Amarelo fixo</button><button data-v="pe">Em pé</button><button data-v="base">Hipotenusa na base</button>
+          </div>
+        </div>
         <p class="plabel">Exemplos prontos</p>
         <div class="presets" id="presets"></div>
       </section>
@@ -164,6 +443,8 @@
       <section class="pgroup">
         <h3>O que mostrar</h3>
         <label class="switch"><input type="checkbox" id="ck-hide"><span>Modo mistério (valores ocultos, toque para revelar)</span></label>
+        <label class="switch"><input type="checkbox" id="ck-alt"><span>Altura, com as projeções <var>m</var> e <var>n</var></span></label>
+        <label class="switch"><input type="checkbox" id="ck-names"><span>Nomes dos lados</span></label>
         <label class="switch"><input type="checkbox" id="ck-values"><span>Valores junto às figuras</span></label>
         <label class="switch"><input type="checkbox" id="ck-angles"><span>Ângulos β e γ</span></label>
         <label class="switch"><input type="checkbox" id="ck-fill"><span>Colorir os triângulos menores</span></label>
@@ -193,12 +474,31 @@
 
       <section class="pgroup">
         <h3>Compartilhar com a turma</h3>
-        <p class="note">O link guarda o triângulo, o módulo, o passo e o nível atuais.</p>
+        <p class="note">O link guarda o triângulo, o módulo, o passo, o nível, a posição e o exercício atuais.</p>
         <div class="share-row">
           <input type="text" id="share-url" readonly aria-label="Link desta configuração">
           <button class="btn" id="share-copy">Copiar</button>
         </div>
         <p class="note" id="share-msg" aria-live="polite"></p>
+        <button class="btn" id="btn-qr">
+          Mostrar QR code para a turma
+        </button>
+        <div class="field">
+          <label for="site-base">Endereço do site</label>
+          <input type="text" id="site-base" inputmode="url" spellcheck="false">
+          <p class="note">Os alunos abrem por este endereço (o do GitHub Pages). A prévia no Claude é privada e não serve para eles.</p>
+        </div>
+      </section>
+
+      <section class="pgroup">
+        <h3>Cenários salvos</h3>
+        <p class="note">Guarda tudo o que está na tela, inclusive o exercício, para abrir de novo com um clique. Fica salvo neste navegador.</p>
+        <div class="share-row">
+          <input type="text" id="sc-name" placeholder="Ex.: Aula 3 · telhado h² = m·n" aria-label="Nome do cenário">
+          <button class="btn" id="sc-save">Salvar</button>
+        </div>
+        <p class="note" id="sc-msg" aria-live="polite"></p>
+        <ul class="sc-list" id="sc-list"></ul>
         <button class="btn btn-ghost" id="reset-all">Restaurar padrão</button>
       </section>
 
@@ -207,10 +507,16 @@
         <dl class="keys">
           <dt><kbd>→</kbd> <kbd>Espaço</kbd></dt><dd>Próximo passo (funciona com passador de slides)</dd>
           <dt><kbd>←</kbd></dt><dd>Passo anterior</dd>
-          <dt><kbd>L</kbd> <kbd>S</kbd></dt><dd>Laboratório / Semelhança</dd>
+          <dt><kbd>L</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>X</kbd></dt><dd>Laboratório / Semelhança / Deduções / Exercícios</dd>
           <dt><kbd>O</kbd></dt><dd>Ocultar ou mostrar valores</dd>
           <dt><kbd>N</kbd></dt><dd>Trocar nível EF / EM</dd>
+          <dt><kbd>G</kbd> <kbd>⇧G</kbd></dt><dd>Girar a figura 15° (com Shift, no outro sentido)</dd>
+          <dt><kbd>E</kbd></dt><dd>Espelhar a figura</dd>
+          <dt><kbd>R</kbd></dt><dd>Sortear uma posição</dd>
+          <dt><kbd>0</kbd></dt><dd>Voltar a figura à posição padrão</dd>
           <dt><kbd>F</kbd></dt><dd>Tela cheia</dd>
+          <dt><kbd>C</kbd></dt><dd>Copiar a figura como imagem</dd>
+          <dt><kbd>A</kbd></dt><dd>Anotar na tela (caneta, marca-texto, laser)</dd>
           <dt><kbd>P</kbd></dt><dd>Abrir ou fechar este painel</dd>
         </dl>
       </section>
@@ -222,6 +528,13 @@
 <script src="js/draw.js"></script>
 <script src="js/lab.js"></script>
 <script src="js/similarity.js"></script>
+<script src="js/deductions.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/exercise.js"></script>
+<script src="js/vendor/qrcode.js"></script>
+<script src="js/annotate.js"></script>
+<script src="js/share.js"></script>
+<script src="js/export.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -5,15 +5,16 @@
   const D = RM.draw;
 
   const W = 1000;
-  const X0 = 70;        // posição de B na tela
-  const BASE = 490;     // altura da hipotenusa na tela
-  const SPAN = 860;     // largura disponível para a hipotenusa
+  const CX = 500, CY = 290;       // centro da figura na tela
+  const FITW = 860, FITH = 460;   // área ocupada pela figura (com o semicírculo)
 
   let svg, measuresEl, relationsEl;
-  let k = SPAN / 25;    // pixels por unidade
-  let drag = null;      // { which: 'A' | 'C' }
-  let refit = null;
-  let highlight = null; // id da relação destacada
+  let disp = { rot: 0, s: 1 };    // rotação (graus) e espelho (1 → -1) exibidos na tela
+  let frozen = null;              // enquadramento congelado durante o arraste de um vértice
+  let settle = null;              // transição do enquadramento depois de soltar
+  let dispAnim = null;
+  let drag = null;                // { which: 'A' | 'C' | 'rot' }
+  let highlight = null;           // id da relação destacada
 
   const SEG = {
     a: ['B', 'C'], b: ['A', 'C'], c: ['A', 'B'],
@@ -47,12 +48,49 @@
     return list;
   }
 
-  function pts(t) {
+  /* ---------- Transformação: coordenadas do triângulo (B na origem, y para cima) → tela ---------- */
+  function turn(p) {
+    const th = (disp.rot * Math.PI) / 180;
+    const x = p[0] * disp.s, y = p[1];
+    return [x * Math.cos(th) - y * Math.sin(th), x * Math.sin(th) + y * Math.cos(th)];
+  }
+  function toScreen(p, v) {
+    const r = turn(p);
+    return [v.ox + v.k * r[0], v.oy - v.k * r[1]];
+  }
+  function toMath(sp, v) {
+    if (Math.abs(disp.s) < 0.3) return null;
+    const rx = (sp.x - v.ox) / v.k, ry = -(sp.y - v.oy) / v.k;
+    const th = (disp.rot * Math.PI) / 180;
+    const x = rx * Math.cos(th) + ry * Math.sin(th);
+    const y = -rx * Math.sin(th) + ry * Math.cos(th);
+    return [x / disp.s, y];
+  }
+  /* Enquadra o semicírculo inteiro (onde A pode estar), para a figura não "pular". */
+  function fitView(t) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i <= 48; i++) {
+      const f = (Math.PI * i) / 48;
+      const r = turn([t.a / 2 + (t.a / 2) * Math.cos(f), (t.a / 2) * Math.sin(f)]);
+      x0 = Math.min(x0, r[0]); x1 = Math.max(x1, r[0]); y0 = Math.min(y0, r[1]); y1 = Math.max(y1, r[1]);
+    }
+    const k = Math.min(FITW / Math.max(x1 - x0, 1e-9), FITH / Math.max(y1 - y0, 1e-9));
+    return { k, ox: CX - k * (x0 + x1) / 2, oy: CY + k * (y0 + y1) / 2 };
+  }
+  function currentView(t) {
+    if (frozen) return frozen;
+    const v = fitView(t);
+    if (!settle) return v;
+    const e = settle.e, f = settle.from;
+    return { k: f.k + (v.k - f.k) * e, ox: f.ox + (v.ox - f.ox) * e, oy: f.oy + (v.oy - f.oy) * e };
+  }
+
+  function pts(t, v) {
     return {
-      B: [X0, BASE],
-      C: [X0 + t.a * k, BASE],
-      H: [X0 + t.m * k, BASE],
-      A: [X0 + t.m * k, BASE - t.h * k],
+      B: toScreen([0, 0], v),
+      C: toScreen([t.a, 0], v),
+      H: toScreen([t.m, 0], v),
+      A: toScreen([t.m, t.h], v),
     };
   }
 
@@ -61,17 +99,20 @@
     return RM.withUnit(val, power);
   }
 
-  /* Rótulo de lado: "c = 15", "c" ou "c = ?" (clicável). */
+  /* Rótulo de lado conforme as camadas: "c = 15", "15", "c", "c = ?" (clicável) ou nada. */
   function sideLabel(key, pos, t, color) {
     const fs = D.fs(28);
     const st = RM.state;
+    const showName = st.names || !!color;
+    const showVal = st.values && st.shown.includes(key);
+    if (!showName && !showVal) return '';
     let str = key;
     let cls = 'slabel';
     let extra = '';
-    if (st.values) {
+    if (showVal) {
       const v = valueText(key, RM.fmt(t[key]));
-      if (v == null) { str = key + ' = ?'; cls += ' clickable'; extra = ' data-reveal="' + key + '"'; }
-      else str = key + ' = ' + v;
+      if (v == null) { str = showName ? key + ' = ?' : '?'; cls += ' clickable'; extra = ' data-reveal="' + key + '"'; }
+      else str = showName ? key + ' = ' + v : v;
     }
     return D.text(pos, D.esc(str), 'class="' + cls + '" font-size="' + fs + '"' + extra + (color ? ' style="fill:' + color + '"' : ''));
   }
@@ -79,31 +120,38 @@
   function render() {
     const st = RM.state;
     const t = RM.tri();
-    const P = pts(t);
+    const v = currentView(t);
+    const P = pts(t, v);
     const hl = highlight ? relations(t).find((r) => r.id === highlight) : null;
     const hlColor = {};
     if (hl) {
       hl.lhs.forEach((s) => { hlColor[s] = 'var(--hl1)'; });
       hl.rhs.forEach((s) => { if (!hlColor[s]) hlColor[s] = 'var(--hl2)'; });
     }
+    const usesAlt = hl && hl.lhs.concat(hl.rhs).some((x) => 'hmn'.includes(x));
+    const showAlt = st.alt || st.fill || usesAlt;
     let out = '';
 
     if (st.grid) {
-      const g = D.grid(X0, BASE, k, W, 620);
+      const g = D.grid(P.B[0], P.B[1], v.k, W, 620);
       out += g.svg;
     }
 
     // Semicírculo: lugar geométrico do vértice A
     if (st.arc) {
-      const r = (t.a * k) / 2;
-      const cx = X0 + r;
-      out += '<path d="M' + X0 + ',' + BASE + ' A' + r + ',' + r + ' 0 0 1 ' + (X0 + 2 * r) + ',' + BASE +
-        '" style="fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 7;opacity:.7"/>';
-      out += '<circle cx="' + cx + '" cy="' + BASE + '" r="3.5" style="fill:var(--muted)"/>';
+      const arc = [];
+      for (let i = 0; i <= 64; i++) {
+        const f = (Math.PI * i) / 64;
+        const q = toScreen([t.a / 2 + (t.a / 2) * Math.cos(f), (t.a / 2) * Math.sin(f)], v);
+        arc.push(q[0].toFixed(1) + ',' + q[1].toFixed(1));
+      }
+      out += '<polyline points="' + arc.join(' ') + '" style="fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 7;opacity:.7"/>';
+      const M = toScreen([t.a / 2, 0], v);
+      out += '<circle cx="' + M[0] + '" cy="' + M[1] + '" r="3.5" style="fill:var(--muted)"/>';
     }
 
     // Triângulos
-    if (st.fill) {
+    if (st.fill && showAlt) {
       out += D.poly([P.B, P.H, P.A], 'style="fill:var(--p1-fill);stroke:none"');
       out += D.poly([P.H, P.C, P.A], 'style="fill:var(--p2-fill);stroke:none"');
     } else {
@@ -115,22 +163,26 @@
       const fs = D.fs(26);
       out += D.angleArc(P.B, P.C, P.A, 48, 'var(--beta)', 'β', fs);
       out += D.angleArc(P.C, P.A, P.B, 48, 'var(--gamma)', 'γ', fs);
-      out += D.angleArc(P.A, P.B, P.H, 36, 'var(--gamma)', null, fs);
-      out += D.angleArc(P.A, P.H, P.C, 44, 'var(--beta)', null, fs);
+      if (showAlt) {
+        out += D.angleArc(P.A, P.B, P.H, 36, 'var(--gamma)', null, fs);
+        out += D.angleArc(P.A, P.H, P.C, 44, 'var(--beta)', null, fs);
+      }
     }
     out += D.rightMark(P.A, P.B, P.C, 16, 'var(--ink)');
-    out += D.rightMark(P.H, P.C, P.A, 13, 'var(--ink)');
+    if (showAlt) out += D.rightMark(P.H, P.C, P.A, 13, 'var(--ink)');
 
     // Lados
     out += D.poly([P.B, P.C, P.A], 'style="fill:none;stroke:var(--big);stroke-width:3;stroke-linejoin:round"');
-    out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
-    out += '<circle cx="' + P.H[0] + '" cy="' + P.H[1] + '" r="4" style="fill:var(--ink)"/>';
+    if (showAlt) {
+      out += D.line(P.A, P.H, 'style="stroke:var(--ink);stroke-width:2.2;stroke-dasharray:8 6"');
+      out += '<circle cx="' + P.H[0] + '" cy="' + P.H[1] + '" r="4" style="fill:var(--ink)"/>';
+    }
 
     // Destaque da relação escolhida
     Object.keys(hlColor).forEach((s) => {
       const seg = SEG[s];
       let p = P[seg[0]], q = P[seg[1]];
-      if (s === 'a') { p = [p[0], p[1] + 58]; q = [q[0], q[1] + 58]; }
+      if (s === 'a' && showAlt) [p, q] = D.offsetSeg(P.B, P.C, P.A, 58);
       out += D.line(p, q, 'style="stroke:' + hlColor[s] + ';stroke-width:8;stroke-linecap:round;opacity:.85"');
     });
 
@@ -138,22 +190,33 @@
     const off = D.fs(26);
     out += sideLabel('c', D.sideLabelPos(P.A, P.B, P.C, off), t, hlColor.c);
     out += sideLabel('b', D.sideLabelPos(P.A, P.C, P.B, off), t, hlColor.b);
-    out += sideLabel('h', D.sideLabelPos(P.A, P.H, P.B, off * 1.1), t, hlColor.h);
-    const lblY = BASE + D.fs(24);
-    const mPos = [(P.B[0] + P.H[0]) / 2, lblY];
-    const nPos = [(P.H[0] + P.C[0]) / 2, lblY];
-    out += sideLabel('m', mPos, t, hlColor.m);
-    out += sideLabel('n', nPos, t, hlColor.n);
-    out += D.dimension(P.B, P.C, 58, (pos) => sideLabel('a', [pos[0], pos[1] + 6], t, hlColor.a),
-      hlColor.a || 'var(--muted)', D.fs(28));
+    if (showAlt) {
+      out += sideLabel('h', D.sideLabelPos(P.A, P.H, P.B, off * 1.1), t, hlColor.h);
+      out += sideLabel('m', D.sideLabelPos(P.B, P.H, P.A, D.fs(24)), t, hlColor.m);
+      out += sideLabel('n', D.sideLabelPos(P.H, P.C, P.A, D.fs(24)), t, hlColor.n);
+    }
+    if (showAlt) {
+      // com m e n junto à hipotenusa, o a vai numa cota afastada
+      const la = sideLabel('a', [0, 0], t, hlColor.a);
+      if (la) out += D.dimension(P.B, P.C, P.A, 58, (pos) => sideLabel('a', pos, t, hlColor.a), hlColor.a || 'var(--muted)', D.fs(28));
+    } else {
+      out += sideLabel('a', D.sideLabelPos(P.B, P.C, P.A, off), t, hlColor.a);
+    }
 
     // Vértices
     const G = [(P.A[0] + P.B[0] + P.C[0]) / 3, (P.A[1] + P.B[1] + P.C[1]) / 3];
     const vfs = D.fs(30);
     out += D.text(D.vertexLabelPos(P.A, G, 30), 'A', 'class="vlabel" font-size="' + vfs + '"');
-    out += D.text([P.B[0] - 26, P.B[1] + 4], 'B', 'class="vlabel" font-size="' + vfs + '"');
-    out += D.text([P.C[0] + 26, P.C[1] + 4], 'C', 'class="vlabel" font-size="' + vfs + '"');
-    out += D.text([P.H[0] - D.fs(18), P.H[1] - D.fs(18)], 'H', 'class="vlabel" font-size="' + D.fs(22) + '" style="fill:var(--muted)"');
+    out += D.text(D.vertexLabelPos(P.B, G, 28), 'B', 'class="vlabel" font-size="' + vfs + '"');
+    out += D.text(D.vertexLabelPos(P.C, G, 28), 'C', 'class="vlabel" font-size="' + vfs + '"');
+    if (showAlt) out += D.text(D.footLabelPos(P.H, P.A, P.B, D.fs(14)), 'H', 'class="vlabel" font-size="' + D.fs(22) + '" style="fill:var(--muted)"');
+
+    // Indicador de posição
+    const st2 = RM.state;
+    if (st2.rot !== 0 || st2.mirror || (drag && drag.which === 'rot')) {
+      const txt = 'Girado ' + RM.fmt(st2.rot, 0) + '°' + (st2.mirror ? ' · espelhado' : '');
+      out += '<text x="20" y="' + D.fs(26) + '" class="badge" data-noexport font-size="' + D.fs(20) + '">' + txt + '</text>';
+    }
 
     // Alças de arraste
     out += handle('A', P.A);
@@ -171,12 +234,18 @@
   }
 
   /* ---------- Painel lateral ---------- */
+  const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path class="slash" d="M4 20 20 4" stroke="currentColor" stroke-width="1.8"/></svg>';
   function measureBtn(key, label, val, hint) {
     const hidden = RM.isHidden(key);
-    return '<button class="meas' + (hidden ? ' hidden-val' : '') + '" data-reveal="' + key + '"' +
-      (hidden ? ' title="Toque para revelar"' : ' tabindex="-1"') + '>' +
+    const eyeable = 'abchmn'.includes(key);
+    const on = RM.state.shown.includes(key);
+    return '<div class="meas' + (hidden ? ' hidden-val' : '') + '">' +
+      '<button class="meas-main" data-reveal="' + key + '"' + (hidden ? ' title="Toque para revelar"' : ' tabindex="-1"') + '>' +
       '<span><span class="k">' + label + '</span> <span class="hint">' + hint + '</span></span>' +
-      '<span class="v">' + (hidden ? '<span class="qmark">?</span>' : val) + '</span></button>';
+      '<span class="v">' + (hidden ? '<span class="qmark">?</span>' : val) + '</span></button>' +
+      (eyeable ? '<button class="eye" data-eye="' + key + '" aria-pressed="' + on + '" title="' + (on ? 'Esconder' : 'Mostrar') +
+        ' o valor de ' + key + ' na figura" aria-label="Valor de ' + key + ' na figura">' + EYE + '</button>' : '') +
+      '</div>';
   }
 
   function renderSide(t) {
@@ -203,7 +272,7 @@
     }).join('');
   }
 
-  /* ---------- Arraste ---------- */
+  /* ---------- Arraste: vértices A e C, ou girar a figura ---------- */
   function svgPoint(evt) {
     const pt = svg.createSVGPoint();
     pt.x = evt.clientX; pt.y = evt.clientY;
@@ -211,37 +280,70 @@
   }
 
   function onDown(evt) {
+    if (evt.button != null && evt.button !== 0) return;
     const h = evt.target.closest('[data-handle]');
-    if (!h) return;
+    if (!h && evt.target.closest('[data-reveal]')) return;
     evt.preventDefault();
-    if (refit) { refit.cancel(); refit = null; }
-    drag = { which: h.getAttribute('data-handle') };
+    if (settle) { settle.anim.cancel(); settle = null; }
+    const p = svgPoint(evt);
+    if (h) {
+      frozen = currentView(RM.tri());
+      drag = { which: h.getAttribute('data-handle') };
+    } else {
+      if (dispAnim) { dispAnim.cancel(); dispAnim = null; }
+      drag = { which: 'rot', ang0: Math.atan2(p.y - CY, p.x - CX), rot0: disp.rot };
+      svg.classList.add('rotating');
+    }
     svg.setPointerCapture(evt.pointerId);
   }
   function onMove(evt) {
     if (!drag) return;
     const p = svgPoint(evt);
     const s = RM.state;
+    if (drag.which === 'rot') {
+      const ang = Math.atan2(p.y - CY, p.x - CX);
+      let delta = (-(ang - drag.ang0) * 180) / Math.PI;
+      if (delta > 180) delta -= 360;
+      if (delta < -180) delta += 360;
+      disp.rot = Math.round(drag.rot0 + delta);
+      RM.set({ rot: disp.rot });
+      return;
+    }
+    const q = toMath(p, frozen);
+    if (!q) return;
     const st = s.snap;
     if (drag.which === 'A') {
-      const m = RM.clamp(RM.snap((p.x - X0) / k), st, s.a - st);
+      const m = RM.clamp(RM.snap(q[0]), st, s.a - st);
       if (m !== s.m) RM.set({ m });
     } else {
-      const a = RM.clamp(RM.snap((p.x - X0) / k), s.m + st, 500);
+      const a = RM.clamp(RM.snap(q[0]), s.m + st, 500);
       if (a !== s.a) RM.set({ a });
     }
   }
   function onUp() {
     if (!drag) return;
+    const was = drag.which;
     drag = null;
-    fitScale(true);
+    svg.classList.remove('rotating');
+    if (was === 'rot') { render(); return; }
+    const from = frozen;
+    frozen = null;
+    settle = { from, e: 0 };
+    settle.anim = RM.tween(450, (e) => { if (settle) { settle.e = e; render(); } }, () => { settle = null; render(); });
   }
 
-  function fitScale(animate) {
-    const target = SPAN / RM.state.a;
-    if (!animate) { k = target; render(); return; }
-    const from = k;
-    refit = RM.tween(450, (e) => { k = from + (target - from) * e; render(); }, () => { refit = null; });
+  /* Anima rotação/espelho até o estado atual. */
+  function animateDisp() {
+    if (dispAnim) dispAnim.cancel();
+    const from = { rot: disp.rot, s: disp.s };
+    let diff = RM.state.rot - from.rot;
+    diff = ((diff + 180) % 360 + 360) % 360 - 180;
+    const to = { rot: from.rot + diff, s: RM.state.mirror ? -1 : 1 };
+    dispAnim = RM.tween(700 / (RM.state.speed || 1), (e) => {
+      disp.rot = from.rot + (to.rot - from.rot) * e;
+      disp.s = from.s + (to.s - from.s) * e;
+      render();
+    }, () => { dispAnim = null; disp.rot = RM.state.rot; render(); });
   }
 
   RM.lab = {
@@ -261,7 +363,17 @@
         render();
       };
       svg.addEventListener('click', reveal);
-      measuresEl.addEventListener('click', reveal);
+      measuresEl.addEventListener('click', (evt) => {
+        const eye = evt.target.closest('[data-eye]');
+        if (eye) {
+          const k = eye.getAttribute('data-eye');
+          const cur = RM.state.shown;
+          const next = cur.includes(k) ? cur.replace(k, '') : cur + k;
+          RM.set(Object.assign({ shown: next }, RM.state.values ? {} : { values: true }));
+          return;
+        }
+        reveal(evt);
+      });
       relationsEl.addEventListener('click', (evt) => {
         const b = evt.target.closest('[data-rel]');
         if (!b) return;
@@ -271,11 +383,13 @@
       });
 
       RM.on((changed) => {
-        if (drag) { render(); return; }
-        if (changed.includes('a')) { fitScale(true); return; }
+        if ((changed.includes('rot') || changed.includes('mirror')) && !(drag && drag.which === 'rot')) {
+          animateDisp();
+          return;
+        }
         render();
       });
-      k = SPAN / RM.state.a;
+      disp = { rot: RM.state.rot, s: RM.state.mirror ? -1 : 1 };
       render();
     },
     render,

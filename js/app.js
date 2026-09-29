@@ -20,12 +20,17 @@
 
     $('view-lab').hidden = s.view !== 'lab';
     $('view-sem').hidden = s.view !== 'sem';
+    $('view-exe').hidden = s.view !== 'exe';
+    $('view-ded').hidden = s.view !== 'ded';
+    $('tab-ded').setAttribute('aria-selected', s.view === 'ded');
+    $('tab-exe').setAttribute('aria-selected', s.view === 'exe');
     $('tab-lab').setAttribute('aria-selected', s.view === 'lab');
     $('tab-sem').setAttribute('aria-selected', s.view === 'sem');
 
     $('lvl-ef').setAttribute('aria-pressed', s.level === 'ef');
     $('lvl-em').setAttribute('aria-pressed', s.level === 'em');
     $('btn-hide').setAttribute('aria-pressed', s.hide);
+    $('btn-reset-pos').classList.toggle('attn', s.rot !== 0 || s.mirror);
     $('btn-hide').querySelector('span').textContent = s.hide ? 'Mostrar valores' : 'Ocultar valores';
 
     // Painel
@@ -48,11 +53,20 @@
     segSync('seg-speed', String(s.speed));
     $('ck-hide').checked = s.hide;
     $('ck-values').checked = s.values;
+    $('ck-alt').checked = s.alt;
+    $('ck-names').checked = s.names;
+    document.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', !!s[b.dataset.layer]));
     $('ck-angles').checked = s.angles;
     $('ck-fill').checked = s.fill;
     $('ck-arc').checked = s.arc;
     $('ck-grid').checked = s.grid;
     $('rg-font').value = s.font;
+    $('rg-rot').value = s.rot;
+    $('rot-val').textContent = RM.fmt(s.rot, 0) + '°';
+    $('ck-mirror').checked = s.mirror;
+    segSync('seg-pose', s.pose);
+    document.querySelectorAll('[data-pose]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.pose === s.pose));
+    document.querySelectorAll('.fb[data-act="mirror"]').forEach((b) => b.setAttribute('aria-pressed', s.mirror));
 
     document.documentElement.style.setProperty('--fs', s.font);
     if (s.theme === 'auto') document.documentElement.removeAttribute('data-theme');
@@ -65,17 +79,14 @@
   function segSync(id, val) {
     Array.from($(id).querySelectorAll('button')).forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === val));
   }
-  function shareUrl() {
-    const base = location.href.split('#')[0];
-    return base + '#' + RM.encodeHash();
-  }
+  function shareUrl() { return RM.share.url(); }
 
   /* ---------- Painel ---------- */
   function openPanel(open) {
     $('panel').hidden = !open;
     $('scrim').hidden = !open;
     $('btn-panel').setAttribute('aria-expanded', open);
-    if (open) $('panel-close').focus();
+    if (open) { RM.share.refresh(); $('panel-close').focus(); }
   }
 
   function bindPanel() {
@@ -120,9 +131,25 @@
     segBind('seg-theme', (v) => RM.set({ theme: v }));
     segBind('seg-speed', (v) => RM.set({ speed: Number(v) }));
 
-    [['ck-hide', 'hide'], ['ck-values', 'values'], ['ck-angles', 'angles'], ['ck-fill', 'fill'], ['ck-arc', 'arc'], ['ck-grid', 'grid']]
+    [['ck-hide', 'hide'], ['ck-alt', 'alt'], ['ck-names', 'names'], ['ck-values', 'values'], ['ck-angles', 'angles'], ['ck-fill', 'fill'], ['ck-arc', 'arc'], ['ck-grid', 'grid']]
       .forEach(([id, key]) => $(id).addEventListener('change', (e) => RM.set({ [key]: e.target.checked })));
     $('rg-font').addEventListener('input', (e) => RM.set({ font: Number(e.target.value) }));
+    $('rg-rot').addEventListener('input', (e) => RM.set({ rot: Number(e.target.value) }));
+    $('ck-mirror').addEventListener('change', (e) => RM.set({ mirror: e.target.checked }));
+    segBind('seg-pose', (v) => RM.set({ pose: v }));
+    document.querySelectorAll('[data-layer]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.layer;
+      RM.set({ [k]: !RM.state[k] });
+    }));
+    document.querySelectorAll('[data-layers]').forEach((b) => b.addEventListener('click', () => {
+      const on = b.dataset.layers === 'all';
+      const patch = {};
+      Object.keys(RM.LAYERS).forEach((k) => { patch[k] = on && k !== 'grid' && k !== 'arc' ? true : on && false; });
+      if (on) patch.shown = 'abchmn';
+      RM.set(patch);
+    }));
+    document.querySelectorAll('[data-pose]').forEach((b) => b.addEventListener('click', () => RM.set({ pose: b.dataset.pose })));
+    document.querySelectorAll('.fb[data-act]').forEach((b) => b.addEventListener('click', () => figAction(b.dataset.act)));
 
     $('share-copy').addEventListener('click', () => {
       const url = shareUrl();
@@ -139,6 +166,24 @@
       const keepView = RM.state.view;
       RM.set(Object.assign({}, RM.DEFAULTS, { view: keepView }), { force: true });
     });
+  }
+
+  /* Ações da barra de posição da figura */
+  function figAction(act) {
+    const s = RM.state;
+    switch (act) {
+      case 'rotL': RM.set({ rot: s.rot + 15 }); break;
+      case 'rotR': RM.set({ rot: s.rot - 15 }); break;
+      case 'mirror': RM.set({ mirror: !s.mirror }); break;
+      case 'stand': RM.set({ rot: RM.standingRot() }); break;
+      case 'random': {
+        let r;
+        do { r = Math.round(Math.random() * 360) - 180; } while (Math.abs(RM.normDeg(r - s.rot)) < 40);
+        RM.set({ rot: r, mirror: Math.random() < 0.5 });
+        break;
+      }
+      case 'reset': RM.set({ rot: 0, mirror: false }); break;
+    }
   }
 
   function segBind(id, fn) {
@@ -170,12 +215,24 @@
     }
     if (s.view === 'sem' && (key === 'ArrowLeft' || key === 'PageUp')) { e.preventDefault(); RM.sim.prev(); return; }
     if (s.view === 'sem' && key === 'Home') { e.preventDefault(); RM.sim.first(); return; }
+    if (s.view === 'ded' && (key === 'ArrowRight' || key === 'PageDown' || (key === ' ' && tag !== 'button'))) { e.preventDefault(); RM.ded.next(); return; }
+    if (s.view === 'ded' && (key === 'ArrowLeft' || key === 'PageUp')) { e.preventDefault(); RM.ded.prev(); return; }
+    if (s.view === 'exe' && (key === 'ArrowRight' || key === 'PageDown' || (key === ' ' && tag !== 'button'))) { e.preventDefault(); RM.exe.next(); return; }
+    if (s.view === 'exe' && (key === 'ArrowLeft' || key === 'PageUp')) { e.preventDefault(); RM.exe.prev(); return; }
     switch (key.toLowerCase()) {
       case 'l': RM.set({ view: 'lab' }); break;
       case 's': RM.set({ view: 'sem' }); break;
+      case 'x': RM.set({ view: 'exe' }); break;
+      case 'd': RM.set({ view: 'ded' }); break;
       case 'o': RM.set({ hide: !s.hide }); break;
       case 'n': RM.set({ level: s.level === 'ef' ? 'em' : 'ef' }); break;
       case 'f': toggleFullscreen(); break;
+      case 'c': RM.exportFig.copyFigure(); break;
+      case 'a': RM.annot.toggle(); break;
+      case 'g': figAction(e.shiftKey ? 'rotR' : 'rotL'); break;
+      case 'e': figAction('mirror'); break;
+      case 'r': figAction('random'); break;
+      case '0': figAction('reset'); break;
       case 'p': openPanel($('panel').hidden); break;
       default: return;
     }
@@ -185,7 +242,12 @@
   function init() {
     RM.loadSaved();
     const fromHash = RM.decodeHash(location.hash);
-    if (fromHash) Object.assign(RM.state, fromHash);
+    let startExercise = null;
+    if (fromHash) {
+      startExercise = fromHash.exercise || null;
+      delete fromHash.exercise;
+      Object.assign(RM.state, fromHash);
+    }
     RM.set({}, { force: true });
 
     document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
@@ -195,22 +257,26 @@
     document.querySelectorAll('[data-level]').forEach((b) => b.addEventListener('click', () => RM.set({ level: b.dataset.level })));
     $('btn-hide').addEventListener('click', () => RM.set({ hide: !RM.state.hide }));
     $('btn-full').addEventListener('click', toggleFullscreen);
+    $('btn-reset-pos').addEventListener('click', () => figAction('reset'));
     bindPanel();
     document.addEventListener('keydown', onKey);
-    window.addEventListener('hashchange', () => {
-      const h = RM.decodeHash(location.hash);
-      if (h) RM.set(h);
-    });
+    window.addEventListener('hashchange', () => { RM.share.applyHash(location.hash.replace(/^#/, '')); });
 
     RM.on(syncUI);
     syncUI();
     RM.lab.init();
     RM.sim.init();
+    RM.exe.init();
+    RM.ded.init();
+    RM.exportFig.init();
+    RM.annot.init();
+    RM.share.init();
+    if (startExercise) RM.exe.loadToken(startExercise);
 
     // Em telas estreitas, aumenta as letras das figuras para continuarem legíveis.
     let lastBoost = 0;
     const updateBoost = () => {
-      const svg = RM.state.view === 'lab' ? $('lab-svg') : $('sem-svg');
+      const svg = $({ lab: 'lab-svg', sem: 'sem-svg', ded: 'ded-svg', exe: 'exe-svg' }[RM.state.view]);
       const w = svg.getBoundingClientRect().width;
       if (!w) return;
       const boost = RM.clamp(620 / w, 1, 1.8);
@@ -219,6 +285,8 @@
       RM.draw.screenBoost = boost;
       RM.lab.render();
       RM.sim.render();
+      RM.exe.render();
+      RM.ded.render();
     };
     window.addEventListener('resize', updateBoost);
     RM.on((changed) => { if (changed.includes('view')) { lastBoost = 0; updateBoost(); } });
