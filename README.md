@@ -78,7 +78,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
 - Passo do arraste, casas decimais e unidade (cm, m).
 - **Modo mistério**: esconde os valores; cada medida é revelada ao ser tocada.
 - Níveis **EF** (linguagem acessível) e **EM** (mais formal).
-- Tema claro ou escuro, tamanho do texto, velocidade da animação, reprodução automática.
+- Tema **claro (padrão)**, escuro ou automático (segue o sistema), tamanho do texto, velocidade da animação, reprodução automática.
 - **Link compartilhável**: guarda triângulo, módulo, passo e nível.
 
 ### Atalhos

@@ -21,7 +21,8 @@
     snap: 0.5,
     dec: 2,
     unit: '',
-    theme: 'auto',
+    theme: 'light',   // tema claro por padrão ('auto' segue o sistema)
+    themeV: 2,        // versão da preferência de tema salva
     font: 1,
     speed: 1,
     rot: 0,           // rotação da figura, em graus (anti-horário)
@@ -125,7 +126,12 @@
   RM.loadSaved = function () {
     try {
       const raw = localStorage.getItem(STORE_KEY);
-      if (raw) Object.assign(RM.state, JSON.parse(raw));
+      if (raw) {
+        const saved = JSON.parse(raw);
+        // Quem salvou antes do tema claro virar padrão passa para o claro uma vez
+        if (!saved.themeV) { saved.theme = 'light'; saved.themeV = 2; }
+        Object.assign(RM.state, saved);
+      }
     } catch (e) { /* ignora */ }
     sanitize(RM.state);
   };
