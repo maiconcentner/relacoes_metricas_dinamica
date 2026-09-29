@@ -45,6 +45,7 @@ Material interativo para ensinar as **relações métricas no triângulo retâng
   - a conta (multiplicação cruzada) e o valor encontrado, que aparece na figura.
   - Pitágoras e a soma das projeções também vão por partes: qual triângulo usar, montar e substituir, calcular;
   - na **Resposta**, os triângulos desfazem os movimentos, um de cada vez, e voltam para o lugar na figura (ou na cena), já com o valor encontrado.
+- Depois que os triângulos saem da cena, a cena só volta na **Resposta** (sem ir e voltar no meio da resolução); a conferência pela fórmula continua com os triângulos alinhados.
 - Botão para copiar o enunciado.
 
 ### Posição da figura

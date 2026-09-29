@@ -237,9 +237,9 @@
         const calcForm = calcFrom(FF.L, FF.R);
         const fillFig = { fill: keys, hl: R.vars.map((v) => [v, v === x ? 'hl1' : 'hl2']) };
 
+        const inplace = {}, aligned = {};
+        keys.forEach((k) => { inplace[k] = 'inplace'; aligned[k] = 'rot'; });
         if (cfg.method !== 'formula') {
-          const inplace = {}, aligned = {};
-          keys.forEach((k) => { inplace[k] = 'inplace'; aligned[k] = 'rot'; });
           const seq = mini.seq(t, keys);
           steps.push({
             title: pre + 'Quais triângulos vamos comparar?',
@@ -292,6 +292,8 @@
               : '<p>As medidas ' + listAnd(R.vars.map((v) => sym(v))) + ' estão ligadas pela relação ' + formula + '. Substituímos os valores:</p>') +
               ml(formula) + calcForm + (both ? '<p>O mesmo resultado, por um caminho mais curto.</p>' : ''),
             fig: both ? { hl: [[x, 'ok']] } : fillFig,
+            // Nas duas: a conferência continua com os triângulos alinhados (sem voltar para a cena)
+            mini: both ? { keys, phases: aligned, hl, label: labeler(after) } : undefined,
             found: found.concat([x]),
           });
         }
@@ -375,7 +377,7 @@
       fig: { hl: [[e.target, 'ok']] },
       found: found.slice(),
       // Os triângulos voltam, com todos os valores, para a posição inicial da figura
-      move: !!lastKeys,
+      move: !!lastKeys && !!(steps[steps.length - 1] && steps[steps.length - 1].mini),
       home: lastKeys ? {
         keys: lastKeys,
         label: (key, side) => {
@@ -422,7 +424,8 @@
     homeToken++;
     if (!ex || !ex.sol) { if (mini) mini.stop(); els.fig.innerHTML = ''; els.miniG.innerHTML = ''; return; }
     const st = ex.sol[ex.cur];
-    if (st && st.home && dir === 1 && mini) {
+    const prevSt = ex.sol[ex.cur - 1];
+    if (st && st.home && dir === 1 && mini && prevSt && prevSt.mini) {
       // Resposta: os triângulos alinhados voltam deslizando e girando para o lugar original,
       // e só então a figura (com a cena) reaparece por baixo
       const FP0 = figTransform(ex.t);
@@ -519,7 +522,9 @@
     let out = '';
     const sc = sceneOf(ex);
     // Depois de encontrado o triângulo, a cena fica mais clara para ele se destacar
-    if (sc) out += '<g class="scene' + (animIn ? ' scene-dim-in' : '') + '" style="opacity:' + (ex.cur >= 1 && ex.cur < ex.sol.length - 1 ? 0.55 : 1) + '">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
+    // Depois que os triângulos saíram da cena, ela só volta na Resposta
+    const midDecomp = ex.cur < ex.sol.length - 1 && ex.sol.slice(1, ex.cur).some((s) => s.mini);
+    if (sc && !midDecomp) out += '<g class="scene' + (animIn ? ' scene-dim-in' : '') + '" style="opacity:' + (ex.cur >= 1 && ex.cur < ex.sol.length - 1 ? 0.55 : 1) + '">' + sc.draw(RM.scenes.geo(t), P.S) + '</g>';
     const drawIn = animIn ? ' pathLength="1" class="draw-in"' : '';
     // Na cena, o triângulo aparece discreto até ser "encontrado" (passo 1)
     const hidden = sc && ex.cur === 0;
